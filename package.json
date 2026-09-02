@@ -1,0 +1,22 @@
+{
+  "name": "sports-federation",
+  "version": "1.0.0",
+  "description": "The General Chapter & Supreme Golden Test Suite for the Finnish Youth Sports Monastic Federation",
+  "type": "module",
+  "main": "contracts/index.ts",
+  "scripts": {
+    "test": "npm run test:contracts && npm run test:golden",
+    "test:contracts": "node contracts/verify-contracts.mjs",
+    "test:golden": "node scripts/supreme-golden-test.mjs"
+  },
+  "keywords": [
+    "monastic-architecture",
+    "torneopal",
+    "sports-stats",
+    "pelipaiva",
+    "parkkis",
+    "golden-test"
+  ],
+  "author": "traali",
+  "license": "MIT"
+}

@@ -1,0 +1,14 @@
+# Sovereign Monasteries (nested git sub-repos)
+pelipaiva/
+Parkkis/
+floorball-stats/
+basketball-stats/
+football-stats/
+volleyball-stats/
+
+# Dependencies & Build Cache
+node_modules/
+dist/
+.wrangler/
+.DS_Store
+*.log

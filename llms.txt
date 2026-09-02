@@ -1,0 +1,17 @@
+# Sports Federation — The Monastic Multi-Repo Ecosystem
+
+> The central governance, canonical interface contracts, and end-user verification suite for the Finnish Youth Sports Federation ecosystem.
+
+## Ecosystem Architecture
+The federation consists of 6 sovereign repositories (monasteries):
+- `pelipaiva`: Family matchday calendar, multi-sport schedule conflict engine, and WebMCP browser assistant tools.
+- `Parkkis`: Spatial parking radar with 165,000 fine data points and curated arena presets.
+- `floorball-stats`: SSBL Salibandy Torneopal match timeline, goalie saves, and YV/AV special teams radar.
+- `basketball-stats`: Koripalloliitto / Basket.fi 4-quarter scoring, team foul bonus tracking, and player leaderboards.
+- `football-stats`: Palloliitto football match comparison, head-to-head records, and form momentum.
+- `volleyball-stats`: 25-point set score momentum tracking.
+
+## Central Verification
+- `contracts/`: Canonical interface contracts (`SportStatsContract`, `ParkingRiskContract`, `MatchdayContextContract`).
+- `scripts/supreme-golden-test.mjs`: Neutral end-user Saturday matchday simulation testing across all 6 repositories.
+- `GLOBAL_ROLL.md`: Chronicle of General Chapter decisions and contract upgrades.

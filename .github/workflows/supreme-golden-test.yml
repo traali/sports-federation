@@ -1,0 +1,38 @@
+name: Supreme Golden End-User Test Suite (The Abbas Primas)
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: '0 6 * * 6' # Run every Saturday at 06:00 UTC before weekend matchdays
+  workflow_dispatch:
+
+jobs:
+  golden-test:
+    name: Supreme Golden End-User Saturday Odyssey
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Federation Canons
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Clone Sovereign Monasteries
+        run: |
+          git clone --depth 1 https://github.com/traali/pelipaiva.git pelipaiva
+          git clone --depth 1 https://github.com/traali/Parkkis.git Parkkis
+          git clone --depth 1 https://github.com/traali/floorball-stats.git floorball-stats
+          git clone --depth 1 https://github.com/traali/basketball-stats.git basketball-stats
+          git clone --depth 1 https://github.com/traali/football-stats.git football-stats
+          git clone --depth 1 https://github.com/traali/volleyball-stats.git volleyball-stats
+
+      - name: Verify Cross-Monastery Contracts
+        run: node contracts/verify-contracts.mjs
+
+      - name: Execute Supreme Golden End-User Test Suite
+        run: node scripts/supreme-golden-test.mjs
