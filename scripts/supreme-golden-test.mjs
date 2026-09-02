@@ -42,7 +42,8 @@ function fail(stepNum, title, error) {
 
 async function runSupremeGoldenTest() {
   // ─────────────────────────────────────────────────────────────────────────────
-  // STEP 1: Live Service Availability & Page Loading Verification (All 6 Services)
+  // ─────────────────────────────────────────────────────────────────────────────
+  // STEP 1: Deep Live Production Audit (All 6 Services: HTML, Bundles, Git Commits & UI Badges)
   // ─────────────────────────────────────────────────────────────────────────────
   try {
     const services = [
@@ -60,18 +61,52 @@ async function runSupremeGoldenTest() {
         if (res.status !== 200) {
           throw new Error(`${svc.name} failed to load: HTTP ${res.status} on ${svc.url}`)
         }
-        const text = await res.text()
-        if (!text || text.length < 50) {
-          throw new Error(`${svc.name} returned empty or invalid HTML payload (${text?.length || 0} bytes)`)
+        const html = await res.text()
+        if (!html || !html.includes('<div id="root">')) {
+          throw new Error(`${svc.name} returned invalid HTML payload (missing #root container)`)
         }
-        return `${svc.name}: HTTP 200 OK (${(text.length / 1024).toFixed(1)} kB)`
+
+        // Extract and inspect live JS bundles for build version, git commit, and UI badge
+        const scriptRegex = /src=["']([^"']+\.js)/g
+        const scriptMatches = []
+        let match
+        while ((match = scriptRegex.exec(html)) !== null) {
+          scriptMatches.push(match[1])
+        }
+
+        if (scriptMatches.length === 0) {
+          throw new Error(`${svc.name} has no JS script tags referenced in HTML!`)
+        }
+
+        let foundCommit = null
+        let foundBuildInfo = false
+        let foundBadge = false
+
+        for (const src of scriptMatches) {
+          const scriptUrl = src.startsWith('http') ? src : new URL(src, svc.url).href
+          const scriptRes = await fetch(scriptUrl)
+          if (scriptRes.status !== 200) continue
+          const js = await scriptRes.text()
+
+          if (js.includes('__APP_BUILD_INFO__')) foundBuildInfo = true
+          if (js.includes('app-version-badge')) foundBadge = true
+
+          const commitMatch = js.match(/commit[:=]\s*[`"']([a-f0-9]{7,40})[`"']/i) || js.match(/git[:=]\s*[`"']?([a-f0-9]{7,40})[`"']?/i)
+          if (commitMatch && !foundCommit) foundCommit = commitMatch[1]
+        }
+
+        if (!foundBuildInfo || !foundCommit || !foundBadge) {
+          throw new Error(`${svc.name} missing live build info (commit: ${foundCommit || 'NONE'}, info: ${foundBuildInfo}, badge: ${foundBadge})`)
+        }
+
+        return `${svc.name}: HTTP 200 OK | git:${foundCommit} | window.__APP_BUILD_INFO__ ✅ | UI Badge ✅`
       })
     )
 
-    pass(1, 'All 6 Sovereign Monasteries Live & Loading (First Page Gate)',
+    pass(1, 'All 6 Sovereign Monasteries Live, Deeply Audited & Verified (Commit Hash & Version Badge Gate)',
       loadResults.join('\n   • '))
   } catch (err) {
-    fail(1, 'Service Page Loading Gate', err.message)
+    fail(1, 'Service Deep Inspection Gate', err.message)
   }
 
   // ─────────────────────────────────────────────────────────────────────────────

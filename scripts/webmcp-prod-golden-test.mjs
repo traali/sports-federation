@@ -58,7 +58,9 @@ async function step2() {
     { sport: 'Basketball', url: 'https://basketball-stats-byu.pages.dev/match/Honka-LePy' },
     { sport: 'Volleyball', url: 'https://volleyball-stats-7xq.pages.dev/match/KaLe-Vantaa' },
     { sport: 'Football', url: 'https://football-stats-agk.pages.dev/#/match/HJK-K%C3%A4Pa' },
-    { sport: 'ParkkiS Venue', url: 'https://parkkis.pages.dev/venue/Otahalli' },
+    { sport: 'Football Slug', url: 'https://football-stats-agk.pages.dev/#/match/PPJ%2FLaru%20sin-ATW%20United' },
+    { sport: 'ParkkiS Otahalli', url: 'https://parkkis.pages.dev/venue/Otahalli' },
+    { sport: 'ParkkiS Ruukinlahti', url: 'https://parkkis.pages.dev/venue/Ruukinlahden%20tekonurmi?lat=60.16197&lon=24.86975' },
   ]
 
   for (const { sport, url } of matchUrls) {
@@ -67,7 +69,7 @@ async function step2() {
   }
 
   pass(2, 'Live SPA Deep Match Route Resolution in Production',
-    'Verified /match/Indians-Oilers, /match/Honka-LePy, /match/KaLe-Vantaa, and /venue/Otahalli return HTTP 200.')
+    'Verified /match/Indians-Oilers, /match/Honka-LePy, /match/KaLe-Vantaa, #/match/PPJ-ATW, and /venue/Ruukinlahden%20tekonurmi return HTTP 200.')
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
