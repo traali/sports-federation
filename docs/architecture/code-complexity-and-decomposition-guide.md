@@ -197,24 +197,26 @@ football-stats/src/pages/tournament/
 4. **Stage 4: Modularize `App.tsx` with GlobalModalHost**  
    - Replaced 9 boolean states with centralized `useModalStore` and `GlobalModalHost`. (Completed in `cf51b9a`)
 
-5. **Stage 5: Decompose ParkkiS Map Layers into `useParkingLayers`**  
-   - Encapsulated DuckDB parquet loading and layer toggles in reusable `useParkingLayers` hook. (Completed in `95edaf3`)
+5. **Stage 5: Decompose ParkkiS Map Layers into `useParkingLayers` & `ParkingMapView`**  
+   - Encapsulated DuckDB parquet loading and layer toggles in reusable `useParkingLayers` hook (`95edaf3`).
+   - Isolated MapLibre GL layer hierarchy and popup canvas into reusable `ParkingMapView` component (`ec853c9`), reducing `App.tsx` by over 600 lines.
 
 6. **Stage 6: Split `TurnauksetPage` into Subviews**  
-   - Isolated standings tables and matches list into `TournamentStandingsTable` and `TournamentMatchesList`. (Completed in `c040a27`)
+   - Extracted `useTournamentData` hook to handle all Torneopal data fetching and batch player queries.
+   - Isolated subviews into reusable components: `TournamentStandingsTable`, `TournamentMatchesList`, `TournamentPlayoffsTree`, and `TournamentScorersList` (`9b735f0`).
 
 ---
 
 ## Refactoring Verification Status (2026-09-02)
 
-All 6 stages are fully implemented and verified across the federation:
+All 6 stages and their modular sub-components are fully implemented, reusable, and verified across the federation:
 
 | Hotspot | Target Module | Reused Component / Hook | Status | Verification |
 | :--- | :--- | :--- | :--- | :--- |
 | **Hotspot 1** (`pelipaiva/App.tsx`) | `src/components/modals/GlobalModalHost.tsx` | `useModalStore.ts`, `GlobalModalHost.tsx` | **Done** | Vitest 60/60 files, 515/515 passed; bundle 0 warnings |
-| **Hotspot 2** (`statsEngine.ts`) | `SportRulesRegistry.ts`, `syntheticMockFactory.ts` | `SportRulesRegistry.ts`, `syntheticMockFactory.ts` | **Done** | 56 tests in `statsEngine.test.ts` passed |
-| **Hotspot 3** (`Parkkis/App.tsx`) | `Parkkis/web/src/hooks/useParkingLayers.ts` | `useParkingLayers.ts` | **Done** | Vite production build compiled in 1.10s |
-| **Hotspot 4** (`SmartImportModal.tsx`) | `components/import/tabs/*` | 4 modular tab components | **Done** | E2E import flows (F01-F04, F19) passed |
-| **Hotspot 5** (`MatchdayCard` & `HeroMatchCard`) | `hooks/useMatchdayLogistics.ts` | `AttendancePill`, `TalkooDutyTag`, `SurfaceBadge` | **Done** | Shared across cards; attendance & talkoo duty tests passed |
-| **Hotspot 6** (`TurnauksetPage.tsx`) | `components/tournament/*` | `TournamentStandingsTable`, `TournamentMatchesList` | **Done** | `football-stats` build compiled with 0 errors |
+| **Hotspot 2** (`statsEngine.ts`) | `SportRulesRegistry.ts`, `syntheticMockFactory.ts` | `SportRulesRegistry.ts`, `syntheticMockFactory.ts`, `associationUrlParser.ts` | **Done** | 56 tests in `statsEngine.test.ts` passed |
+| **Hotspot 3** (`Parkkis/App.tsx`) | `Parkkis/web/src/hooks/useParkingLayers.ts`, `ParkingMapView.tsx` | `useParkingLayers.ts`, `ParkingMapView.tsx` | **Done** | Vite production build compiled in 1.07s |
+| **Hotspot 4** (`SmartImportModal.tsx`) | `components/import/tabs/*` | 4 modular tab components (`ClassicUrl`, `MessageNlp`, `Spreadsheet`, `CameraOcr`) | **Done** | E2E import flows (F01-F04, F19) passed |
+| **Hotspot 5** (`MatchdayCard` & `HeroMatchCard`) | `hooks/useMatchdayLogistics.ts` | `AttendancePill`, `TalkooDutyTag`, `SurfaceBadge`, `useMatchdayLogistics` | **Done** | Shared across cards; attendance & talkoo duty tests passed |
+| **Hotspot 6** (`TurnauksetPage.tsx`) | `components/tournament/*`, `hooks/useTournamentData.ts` | `TournamentStandingsTable`, `TournamentMatchesList`, `TournamentPlayoffsTree`, `TournamentScorersList` | **Done** | `football-stats` build compiled with 0 errors |
 
