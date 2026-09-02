@@ -405,7 +405,7 @@ async function runSupremeGoldenTest() {
   }
 
   // ─────────────────────────────────────────────────────────────────────────────
-  // STEP 9: AI Agent WebMCP Tool Discovery & Schema Validation
+  // STEP 9: AI Agent WebMCP Tool Discovery, Schema & Security Hints (agent-browser standard)
   // ─────────────────────────────────────────────────────────────────────────────
   try {
     const webMcpFile = join(ROOT, 'pelipaiva', 'src', 'lib', 'agents', 'webMcpRegistry.ts')
@@ -424,12 +424,17 @@ async function runSupremeGoldenTest() {
       }
     }
 
-    if (!content.includes('document.modelContext')) {
-      throw new Error('WebMCP registry missing document.modelContext standard mounting point')
+    if (!content.includes('document.modelContext') || !content.includes('navigator.modelContext')) {
+      throw new Error('WebMCP registry missing document.modelContext / navigator.modelContext standard mounting points')
     }
 
-    pass(9, 'AI Agent WebMCP Tool Discovery & JSON Schema Inspection',
-      `Verified 5 browser-level WebMCP tools mounted on document.modelContext: ${expectedTools.join(', ')}.`)
+    // Enforce agent-browser / Chrome CDP security hint standards
+    if (!content.includes('readOnlyHint: true') || !content.includes('untrustedContentHint: false')) {
+      throw new Error('WebMCP tools must specify readOnlyHint: true and untrustedContentHint: false annotations')
+    }
+
+    pass(9, 'AI Agent WebMCP Tool Discovery & Chrome CDP Security Hint Inspection',
+      `Verified browser WebMCP tools (${expectedTools.join(', ')}) declare readOnlyHint: true & untrustedContentHint: false for agent-browser compatibility.`)
   } catch (err) {
     fail(9, 'WebMCP Tool Discovery', err.message)
   }
