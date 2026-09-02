@@ -1,50 +1,46 @@
-# Supreme Golden End-User Test (Abbas Primas)
+# 👑 Supreme Golden End-User Test (Abbas Primas)
 
-**Version:** 1.0.0  
-**Purpose:** End-to-end holistic verification of the entire Monastic Congregation from the perspective of a real Finnish sports family.
-
----
-
-## 1. The Saturday Family Odyssey Scenario
-
-The Supreme Golden Test does not test code trivia in isolation. It simulates a complete Saturday matchday for a family with multiple children active in Finnish sports:
-
-1. **Family Profile:**
-   * **Tuomas (age 11):** Plays Floorball (Salibandy) for Westend Indians Yellow at Otahalli Espoo.
-   * **Aino (age 13):** Plays Football for HJK Sininen at Töölön Pallokenttä (Väiski).
-
-2. **The 7 Golden Steps:**
-   * **Step 1:** URL & Team Ingestion (`tulospalvelu.salibandy.fi/team/25301/info` and `tulospalvelu.palloliitto.fi/team/185085`).
-   * **Step 2:** Sibling Schedule Conflict & Transit Buffer Calculation (Detects overlap at 15:00 vs 15:30 with 20 min transit buffer).
-   * **Step 3:** Spatial Parking & Walking Gate Routing (Otahalli 4h disc vs Töölö Zone 2 payment).
-   * **Step 4:** Floorball 3-Period Scoring & Special Teams (1–4, 1–5, 1–6 with YV%/AV% and Goalie Save %).
-   * **Step 5:** Football Head-to-Head & Form Radar (Night Captain power bars and cards).
-   * **Step 6:** 1-Tap Post-Match WhatsApp Share Report Generation.
-   * **Step 7:** Autonomous AI Agent WebMCP Tool Discovery in `document.modelContext`.
+**Version:** 1.1.0  
+**Purpose:** End-to-end holistic verification of the entire Monastic Congregation from the perspective of a real Finnish sports family.  
+**Standard:** Adheres strictly to the [5-Point Test Plan Specification](plans/TEST_PLAN_STANDARD.md).
 
 ---
 
-## 2. Failure Diagnosis & Cross-Monastery Communication Protocol
+## 1. The 5-Point Test Dimensions
 
-When any step of the Supreme Golden Test fails, the system executes this diagnostic triage:
+Every step of the Supreme Golden Test fulfills the 5 mandatory dimensions:
+1. **👤 User Journey:** The human-centric real-world Saturday story.
+2. **🎯 Reason It Exists:** The concrete pain point and problem solved.
+3. **🧪 What It Tests:** The exact interface contracts, schema invariants, and data flows.
+4. **🟢 When It Succeeds:** The unambiguous pass condition.
+5. **🔴 When It Should Fail:** The exact anomaly, threshold breach, or regression that must trigger a test failure.
+
+See the complete matrix in [**`docs/plans/TEST_PLAN_STANDARD.md`**](plans/TEST_PLAN_STANDARD.md).
+
+---
+
+## 2. The 8 Golden Saturday Steps
+
+| Step | Focus Area | What It Tests | Pass Condition | Fail Condition |
+| :--- | :--- | :--- | :--- | :--- |
+| **1. Team Ingestion** | SSBL, SPL, Basket.fi | `MatchdayContextContract` | Ingests 3 schedules with valid teams & dates | Expired API key (401/403) or missing times |
+| **2. Conflict Engine** | Otahalli vs Töölö | Sibling overlap + driving buffer | Warns 2-driver conflict with 20m drive | 0-minute buffer or Null Island 14,758 min |
+| **3. ParkkiS Routing** | Spatial Risk & Disc | `ParkingRiskContract` | 4h disc, risk 2/10, walking < 5 min | Risk outside 1-10 or walking > 1,500m |
+| **4. Floorball Stats** | 3-Period Scoring | `FloorballStatsContract` | 3 periods sum to 15–3, goalie save % | Period sum mismatch or periods !== 3 |
+| **5. Football H2H** | Night Captain Radar | `FootballStatsContract` | Form (W/D/L), power bars sum to 100% | Invalid form letters or division by zero |
+| **6. Basketball Stats** | 4-Quarter & Fouls | `BasketballStatsContract` | 4 quarters sum to 68:62, bonus on 5 fouls | Quarters !== 4 or score sum mismatch |
+| **7. WhatsApp Share** | 1-Tap Post-Match | Message formatting | Formatted text with goals, assists, saves | Output contains `undefined` or `NaN` |
+| **8. WebMCP & Prod** | AI Tools & Live Edge | `document.modelContext` | All 6 Cloudflare URLs return HTTP 200 | Any URL 404/500 or X-Frame-Options DENY |
+
+---
+
+## 3. Failure Diagnosis & Cross-Monastery Communication Protocol
 
 ```mermaid
 flowchart TD
     Failure["🚨 Golden Test Step Fails"] --> Diagnose{"🔍 Diagnostic Classification"}
     
-    Diagnose -->|Case A: Monastery Broke Contract| CodeFix["🛠️ CODE CHANGE in Monastery\n• Cellarer/Prior fixes code\n• No contract change needed"]
+    Diagnose -->|Case A: Monastery Broke Contract| CodeFix["🛠️ CODE CHANGE in Monastery\n• Master of Works fixes code\n• No contract change needed"]
     Diagnose -->|Case B: Real-World Upstream Changed| ChapterRFC["🏛️ GENERAL CHAPTER CONVENES\n• Upstream API or parking rule changed\n• Update Canons & Golden Test"]
     Diagnose -->|Case C: Flawed/Brittle Test| TestFix["📜 TEST REBUTTAL (rebuttal.md)\n• Monastery appeals under Ground 1\n• Golden Test assertion adjusted"]
 ```
-
-### Case A: Code Regression in a Monastery (Code Change Required)
-* **Trigger:** A monastery refactored code and stopped emitting required fields defined in `contracts/index.ts`.
-* **Action:** Master of Works / Cellarer of that specific monastery receives a blocker notice and must fix code before pushing.
-
-### Case B: Upstream Real-World Change (Contract & Test Evolution Required)
-* **Trigger:** Torneopal API changes schema or a city council modifies parking disc rules.
-* **Action:** Legate convenes **The General Chapter** to evolve the Canons (`contracts/index.ts`) and update the Golden Test expectations.
-
-### Case C: Flawed or Overly Brittle Test (Test Change Required)
-* **Trigger:** Test fails on insignificant variance (e.g. 120m vs 125m walking distance).
-* **Action:** Monastery appeals under `rebuttal.md` Ground 1 (Factually flawed assertion). Golden test assertions are tuned to acceptable ranges.
