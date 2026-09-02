@@ -5,9 +5,10 @@
   "type": "module",
   "main": "contracts/index.ts",
   "scripts": {
-    "test": "npm run test:contracts && npm run test:golden",
+    "test": "npm run test:contracts && npm run test:golden && npm run test:prod",
     "test:contracts": "node contracts/verify-contracts.mjs",
-    "test:golden": "node scripts/supreme-golden-test.mjs"
+    "test:golden": "node scripts/supreme-golden-test.mjs",
+    "test:prod": "node scripts/webmcp-prod-golden-test.mjs"
   },
   "keywords": [
     "monastic-architecture",

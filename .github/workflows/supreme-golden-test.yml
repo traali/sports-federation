@@ -36,3 +36,6 @@ jobs:
 
       - name: Execute Supreme Golden End-User Test Suite
         run: node scripts/supreme-golden-test.mjs
+
+      - name: Execute Live Production WebMCP Golden Test Suite
+        run: node scripts/webmcp-prod-golden-test.mjs
