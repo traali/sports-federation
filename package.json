@@ -12,6 +12,7 @@
     "test:prod": "node scripts/webmcp-prod-golden-test.mjs",
     "test:real-user": "node scripts/real-user-golden-test.mjs",
     "test:real-user:cdp": "node scripts/real-user-golden-test.mjs --cdp",
+    "test:manual-verifications": "node scripts/manual-verifications-playwright.mjs",
     "test:webmcp": "npx tsx scripts/test-all-webmcp.mjs",
     "test:freshness": "node scripts/verify-build-versions.mjs",
     "hooks:install": "node scripts/install-all-hooks.mjs"
