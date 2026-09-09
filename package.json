@@ -5,13 +5,15 @@
   "type": "module",
   "main": "contracts/index.ts",
   "scripts": {
-    "test": "npm run test:contracts && npm run test:golden && npm run test:prod && npm run test:real-user",
+    "test": "npm run test:monasteries && npm run test:contracts && npm run test:golden && npm run test:prod && npm run test:real-user",
+    "test:monasteries": "node scripts/run-federation-checks.mjs",
     "test:contracts": "node contracts/verify-contracts.mjs",
     "test:golden": "node --experimental-strip-types scripts/supreme-golden-test.mjs",
     "test:prod": "node scripts/webmcp-prod-golden-test.mjs",
     "test:real-user": "node scripts/real-user-golden-test.mjs",
     "test:real-user:cdp": "node scripts/real-user-golden-test.mjs --cdp",
-    "test:freshness": "node scripts/verify-build-versions.mjs"
+    "test:freshness": "node scripts/verify-build-versions.mjs",
+    "hooks:install": "node scripts/install-all-hooks.mjs"
   },
   "keywords": [
     "monastic-architecture",

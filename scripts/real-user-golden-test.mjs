@@ -50,6 +50,14 @@ console.log(`• Strict Freshness Gate: ${strictFreshness ? 'ENABLED (Stale fail
 if (grepFilter) console.log(`• Grep Filter: ${grepFilter}`);
 console.log('═'.repeat(78) + '\n');
 
+export function getUpcomingSaturdayDateISO() {
+  const now = new Date();
+  let diff = (6 - now.getUTCDay() + 7) % 7;
+  if (diff === 0) diff = 7;
+  const sat = new Date(now.getTime() + diff * 24 * 60 * 60 * 1000);
+  return sat.toISOString().slice(0, 10);
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Resilient Dual Playwright Loader
 // ─────────────────────────────────────────────────────────────────────────────
@@ -428,8 +436,9 @@ export async function runRealUserGoldenTestSuite() {
     try {
       await page.goto('https://pelipaiva.pages.dev', { waitUntil: 'domcontentloaded' });
 
-      // Seed Dexie PelipaivaDB with Tuomas & Aino fixtures on Saturday 2026-09-05
-      await page.evaluate(async () => {
+      // Seed Dexie PelipaivaDB with Tuomas & Aino fixtures on upcoming Saturday
+      const upcomingSat = getUpcomingSaturdayDateISO();
+      await page.evaluate(async (satDate) => {
         await new Promise((resolve, reject) => {
           const req = indexedDB.open('PelipaivaDB');
           req.onsuccess = async () => {
@@ -457,9 +466,9 @@ export async function runRealUserGoldenTestSuite() {
               id: 'match-tuomas-1',
               profileId: 'prof-tuomas',
               title: 'Westend Indians vs Oilers',
-              startTime: '2026-09-05T07:00:00.000Z', // 10:00 Finnish local
-              endTime: '2026-09-05T08:15:00.000Z',   // 11:15
-              warmupTime: '2026-09-05T06:15:00.000Z',// 09:15
+              startTime: `${satDate}T07:00:00.000Z`, // 10:00 Finnish local
+              endTime: `${satDate}T08:15:00.000Z`,   // 11:15
+              warmupTime: `${satDate}T06:15:00.000Z`,// 09:15
               venue: {
                 name: 'Otahalli Espoo',
                 normalizedName: 'otahalli',
@@ -488,9 +497,9 @@ export async function runRealUserGoldenTestSuite() {
               id: 'match-aino-1',
               profileId: 'prof-aino',
               title: 'HJK Sininen vs KäPa',
-              startTime: '2026-09-05T07:30:00.000Z', // 10:30 Finnish local
-              endTime: '2026-09-05T08:45:00.000Z',   // 11:45
-              warmupTime: '2026-09-05T06:45:00.000Z',// 09:45
+              startTime: `${satDate}T07:30:00.000Z`, // 10:30 Finnish local
+              endTime: `${satDate}T08:45:00.000Z`,   // 11:45
+              warmupTime: `${satDate}T06:45:00.000Z`,// 09:45
               venue: {
                 name: 'Töölön Pallokenttä',
                 normalizedName: 'töölön pallokenttä',
@@ -520,7 +529,7 @@ export async function runRealUserGoldenTestSuite() {
           };
           req.onerror = () => reject(req.error);
         });
-      });
+      }, upcomingSat);
 
       await page.reload({ waitUntil: 'networkidle' });
 
@@ -711,7 +720,8 @@ export async function runRealUserGoldenTestSuite() {
       await page.goto('https://pelipaiva.pages.dev', { waitUntil: 'domcontentloaded' });
 
       // Seed Otahalli (Safe disc) and Kamppi / Kisahalli (Trap) events into PelipaivaDB
-      await page.evaluate(async () => {
+      const upcomingSat = getUpcomingSaturdayDateISO();
+      await page.evaluate(async (satDate) => {
         await new Promise((resolve, reject) => {
           const req = indexedDB.open('PelipaivaDB');
           req.onsuccess = async () => {
@@ -734,8 +744,8 @@ export async function runRealUserGoldenTestSuite() {
               id: 'match-otahalli-safe',
               profileId: 'prof-mikko',
               title: 'Westend Indians vs Oilers @ Otahalli',
-              startTime: '2026-09-05T07:00:00.000Z',
-              endTime: '2026-09-05T08:30:00.000Z',
+              startTime: `${satDate}T07:00:00.000Z`,
+              endTime: `${satDate}T08:30:00.000Z`,
               venue: {
                 name: 'Otahalli Espoo',
                 normalizedName: 'otahalli',
@@ -765,8 +775,8 @@ export async function runRealUserGoldenTestSuite() {
               id: 'match-kamppi-trap',
               profileId: 'prof-mikko',
               title: 'Kamppi Away Clash @ Malminkatu',
-              startTime: '2026-09-05T12:00:00.000Z',
-              endTime: '2026-09-05T13:30:00.000Z',
+              startTime: `${satDate}T12:00:00.000Z`,
+              endTime: `${satDate}T13:30:00.000Z`,
               venue: {
                 name: 'Kamppi Keskus / Malminkatu',
                 normalizedName: 'kamppi',
@@ -796,7 +806,7 @@ export async function runRealUserGoldenTestSuite() {
           };
           req.onerror = () => reject(req.error);
         });
-      });
+      }, upcomingSat);
 
       await page.reload({ waitUntil: 'networkidle' });
       await page.locator('button[role="tab"]:has-text("Kortit")').click();
@@ -1294,7 +1304,8 @@ export async function runRealUserGoldenTestSuite() {
       await page.goto('https://pelipaiva.pages.dev', { waitUntil: 'domcontentloaded' });
 
       // Seed 2 matches on the day: Event 1 is HeroMatchCard, Event 2 is MatchdayCard (which renders WhatsApp button)
-      await page.evaluate(async () => {
+      const upcomingSat = getUpcomingSaturdayDateISO();
+      await page.evaluate(async (satDate) => {
         await new Promise((resolve, reject) => {
           const req = indexedDB.open('PelipaivaDB');
           req.onsuccess = async () => {
@@ -1317,8 +1328,8 @@ export async function runRealUserGoldenTestSuite() {
               id: 'match-briefing-early',
               profileId: 'prof-briefing',
               title: 'HJK Sininen alkulämpö & taktiikka',
-              startTime: '2026-09-05T06:30:00.000Z',
-              endTime: '2026-09-05T07:15:00.000Z',
+              startTime: `${satDate}T06:30:00.000Z`,
+              endTime: `${satDate}T07:15:00.000Z`,
               venue: { name: 'Töölön Pallokenttä', coordinates: { lat: 60.1873, lng: 24.9258 } },
               sport: 'football',
               homeTeam: 'HJK Sininen',
@@ -1331,8 +1342,8 @@ export async function runRealUserGoldenTestSuite() {
               id: 'match-briefing-1',
               profileId: 'prof-briefing',
               title: 'HJK Sininen vs KäPa',
-              startTime: '2026-09-05T07:30:00.000Z',
-              endTime: '2026-09-05T08:45:00.000Z',
+              startTime: `${satDate}T07:30:00.000Z`,
+              endTime: `${satDate}T08:45:00.000Z`,
               venue: {
                 name: 'Töölön Pallokenttä',
                 coordinates: { lat: 60.1873, lng: 24.9258 },
@@ -1349,7 +1360,7 @@ export async function runRealUserGoldenTestSuite() {
           };
           req.onerror = () => reject(req.error);
         });
-      });
+      }, upcomingSat);
 
       await page.reload({ waitUntil: 'networkidle' });
       await page.locator('button[role="tab"]:has-text("Kortit")').click();

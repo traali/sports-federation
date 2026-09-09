@@ -25,6 +25,17 @@ function fail(stepNum, title, error) {
   process.exit(1)
 }
 
+async function fetchWithRetry(url, options = {}, retries = 2) {
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      return await fetch(url, options)
+    } catch (err) {
+      if (attempt === retries) throw err
+      await new Promise(r => setTimeout(r, 500))
+    }
+  }
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // STEP 1: Live Cloudflare Pages Production Root Endpoints
 // ─────────────────────────────────────────────────────────────────────────────
@@ -40,7 +51,7 @@ async function step1() {
 
   const results = await Promise.all(
     rootUrls.map(async ({ name, url }) => {
-      const res = await fetch(url)
+      const res = await fetchWithRetry(url)
       if (res.status !== 200) throw new Error(`${name} returned HTTP ${res.status} on ${url}`)
       return `${name}: HTTP 200`
     })
@@ -64,7 +75,7 @@ async function step2() {
   ]
 
   for (const { sport, url } of matchUrls) {
-    const res = await fetch(url)
+    const res = await fetchWithRetry(url)
     if (res.status !== 200) throw new Error(`Deep match route failed for ${sport}: HTTP ${res.status} on ${url}`)
   }
 
@@ -83,7 +94,7 @@ async function step3() {
   ]
 
   for (const { name, url } of widgetEndpoints) {
-    const res = await fetch(url)
+    const res = await fetchWithRetry(url)
     if (res.status !== 200) throw new Error(`${name} widget failed to load: HTTP ${res.status} on ${url}`)
     const text = await res.text()
     if (!text.includes('<!DOCTYPE html>') && !text.includes('<html')) {
@@ -107,7 +118,7 @@ async function step4() {
   ]
 
   for (const url of satellites) {
-    const res = await fetch(url)
+    const res = await fetchWithRetry(url)
     const xFrame = res.headers.get('x-frame-options')
     if (xFrame && xFrame.toUpperCase() === 'DENY') {
       throw new Error(`Satellite ${url} has X-Frame-Options: DENY which blocks Pelipäivä slide-over drawers`)
