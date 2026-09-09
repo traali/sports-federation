@@ -371,7 +371,7 @@ export async function runManualVerifications() {
     const t0T4 = performance.now();
 
     await page.goto('https://basketball-stats-byu.pages.dev', { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(600);
+    await page.waitForSelector('text=Q1', { timeout: 4000 }).catch(() => {});
 
     // Verify 4-quarter headers (Q1, Q2, Q3, Q4)
     const q1 = await page.locator('text=Q1').isVisible();
