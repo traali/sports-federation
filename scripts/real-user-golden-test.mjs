@@ -409,13 +409,34 @@ export async function runRealUserGoldenTestSuite() {
         throw new Error(`Central core parking risk expected trap (>=7), got: ${centralCoreRisk?.riskRating}`);
       }
 
+      // 4. Football WebMCP Tool Discovery & Execution (H2H card + UI widget)
+      await page.goto('https://football-stats-agk.pages.dev', { waitUntil: 'domcontentloaded', timeout: 30000 });
+      await page.waitForTimeout(800);
+
+      const footMcp = await page.evaluate(async () => {
+        if (!navigator.modelContextTesting) return null;
+        const list = await navigator.modelContextTesting.listTools();
+        const res = await navigator.modelContextTesting.executeTool('get_h2h_card', {
+          homeTeam: 'HJK',
+          awayTeam: 'KäPa',
+          leagueName: 'P13 Liiga',
+        });
+        return { list, res };
+      });
+
+      if (!footMcp || !footMcp.list || !footMcp.list.tools.some((t) => t.name === 'get_h2h_card')) {
+        throw new Error('Football WebMCP missing get_h2h_card tool in live browser');
+      }
+
+      const footToolNames = footMcp.list.tools.map((t) => t.name);
+
       const duration = performance.now() - t0;
       recordPass(
         'Gate 2',
-        'Cloudflare Browser Run WebMCP Discovery & Execution',
-        'listTools() + executeTool(check_parking_risk)',
+        'Cloudflare Browser Run WebMCP Discovery & Execution (Pelipäivä + Football)',
+        'listTools() + executeTool(check_parking_risk, get_h2h_card)',
         duration,
-        `Discovered [${toolNames.join(', ')}]. Otahalli Risk: ${otahalliRisk.riskRating}/10 (${otahalliRisk.safetyCategory}), Central Core Risk: ${centralCoreRisk.riskRating}/10 (${centralCoreRisk.safetyCategory}).`
+        `Discovered Pelipäivä [${toolNames.join(', ')}] & Football [${footToolNames.join(', ')}]. Widget: ${footMcp.res?._meta?.ui?.resourceUri || 'OK'}.`
       );
     } catch (err) {
       recordFail('Gate 2', 'Cloudflare Browser Run WebMCP Testing Standard', 'WebMCP tool contract execution', performance.now() - t0, err.message);

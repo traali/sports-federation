@@ -12,3 +12,5 @@ dist/
 .wrangler/
 .DS_Store
 *.log
+*.png
+.agents/
