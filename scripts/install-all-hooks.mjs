@@ -17,10 +17,11 @@ const REPOS = [
   join(ROOT, 'football-stats'),
   join(ROOT, 'floorball-stats'),
   join(ROOT, 'basketball-stats'),
-  join(ROOT, 'volleyball-stats')
+  join(ROOT, 'volleyball-stats'),
+  join(ROOT, 'weather-stats')
 ];
 
-console.log('🔗 [HOOKS] Installing Lefthook git hooks across all 7 repositories...\n');
+console.log('🔗 [HOOKS] Installing Lefthook git hooks across all 8 repositories...\n');
 
 let failed = 0;
 for (const repo of REPOS) {
@@ -39,4 +40,5 @@ if (failed > 0) {
   process.exit(1);
 }
 
-console.log('\n✨ [HOOKS] All 7 repositories successfully equipped with active Lefthook pre-commit and pre-push hooks!\n');
+console.log('\n✨ [HOOKS] All 8 repositories successfully equipped with active Lefthook pre-commit and pre-push hooks!\n');
+

@@ -15,11 +15,13 @@ const MONASTERIES = [
   { name: '🏑 Floorball Stats', dir: 'floorball-stats', cmd: 'npm run check' },
   { name: '🏀 Basketball Stats', dir: 'basketball-stats', cmd: 'npm run check' },
   { name: '🏐 Volleyball Stats', dir: 'volleyball-stats', cmd: 'npm run check' },
+  { name: '🌦️ Weather Stats', dir: 'weather-stats', cmd: 'npm run check' },
 ];
 
 console.log('\n' + '═'.repeat(78));
-console.log('🏛️ MASTER FEDERATION QUALITY GATES: ALL 6 SOVEREIGN MONASTERIES');
+console.log('🏛️ MASTER FEDERATION QUALITY GATES: ALL 7 SOVEREIGN MONASTERIES');
 console.log('═'.repeat(78) + '\n');
+
 
 const results = [];
 let allPassed = true;
@@ -53,5 +55,5 @@ if (!allPassed) {
   process.exit(1);
 }
 
-console.log('✨ [FEDERATION] All 6 sovereign monasteries verified 100% green!\n');
+console.log('✨ [FEDERATION] All 7 sovereign monasteries verified 100% green!\n');
 process.exit(0);

@@ -40,7 +40,7 @@ for (const iface of requiredInterfaces) {
 // 2. Verify target repository compliance if requested
 const targetRepo = process.argv[2];
 
-const REPOS = targetRepo ? [targetRepo] : ['pelipaiva', 'football-stats', 'Parkkis', 'volleyball-stats', 'floorball-stats', 'basketball-stats'];
+const REPOS = targetRepo ? [targetRepo] : ['pelipaiva', 'football-stats', 'Parkkis', 'volleyball-stats', 'floorball-stats', 'basketball-stats', 'weather-stats'];
 
 let hasError = false;
 
@@ -113,8 +113,16 @@ for (const repo of REPOS) {
     } else {
       console.log(`✅ [CONTRACTS] basketball-stats successfully satisfies SportStatsContract.`);
     }
+  } else if (repo === 'weather-stats') {
+    if (!content.includes('WeatherForecastContract')) {
+      console.error(`❌ [CONTRACTS] weather-stats adapter missing WeatherForecastContract!`);
+      hasError = true;
+    } else {
+      console.log(`✅ [CONTRACTS] weather-stats successfully satisfies WeatherForecastContract.`);
+    }
   }
 }
+
 
 if (hasError) {
   console.error('\n❌ [CONTRACTS] Contract verification failed.');

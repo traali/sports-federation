@@ -57,7 +57,8 @@ if (mode === 'tokens') {
     // Skip binary, lock, and wasm files
     if (file.endsWith('.lock') || file.endsWith('-lock.json') || file.endsWith('.png') || file.endsWith('.jpg') || file.endsWith('.parquet') || file.endsWith('.wasm') || file.endsWith('.wasm.js') || file.endsWith('.traineddata')) continue;
     // Skip test files, fixtures, git-guard itself, token safety assertions, and intentional template generator models
-    if (file.includes('test') || file.includes('fixtures') || file.includes('git-guard') || file.includes('verify-token-safety') || file.includes('deterministicReasoner')) continue;
+    const lower = file.toLowerCase();
+    if (lower.includes('test') || lower.includes('fixtures') || lower.includes('git-guard') || lower.includes('verify-token-safety') || lower.includes('deterministicreasoner')) continue;
 
     const isCode = /\.(ts|tsx|js|jsx|mjs|cjs)$/i.test(file);
     const isMarkdown = /\.md$/i.test(file);

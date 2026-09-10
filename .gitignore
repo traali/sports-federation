@@ -5,6 +5,7 @@ floorball-stats/
 basketball-stats/
 football-stats/
 volleyball-stats/
+weather-stats/
 
 # Dependencies & Build Cache
 node_modules/

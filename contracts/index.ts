@@ -109,3 +109,26 @@ export interface CrossRepoQueryContract {
   /** Focus entity ID (match, team, or venue) */
   targetId?: string;
 }
+
+/**
+ * Standardized meteorological forecast & safety intelligence provided by weather-stats.
+ */
+export interface WeatherForecastContract {
+  venueId?: string;
+  venueName?: string;
+  coordinates: { latitude: number; longitude: number };
+  kickoffTime: string;
+  temperatureC: number;
+  feelsLikeC: number;
+  windSpeedMs: number;
+  windGustMs: number;
+  precipitationMmh: number;
+  turfCondition: 'dry' | 'slick' | 'frozen' | 'snowy';
+  turfConditionLabelFi: string;
+  lightningRiskStatus: 'clear' | 'watch' | 'danger';
+  suspendMatchRecommended: boolean;
+  deepLinkUrl: string;
+  isCacheFallback: boolean;
+  updatedAt?: string;
+}
+
