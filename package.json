@@ -5,7 +5,8 @@
   "type": "module",
   "main": "contracts/index.ts",
   "scripts": {
-    "test": "npm run test:monasteries && npm run test:contracts && npm run test:golden && npm run test:prod && npm run test:real-user",
+    "test": "npm run test:monasteries && npm run test:contracts && npm run test:golden && npm run test:prod",
+    "test:all": "npm test && npm run test:real-user",
     "test:monasteries": "node scripts/run-federation-checks.mjs",
     "test:contracts": "node contracts/verify-contracts.mjs",
     "test:golden": "node --experimental-strip-types scripts/supreme-golden-test.mjs",
