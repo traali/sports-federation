@@ -71,6 +71,13 @@ Append-only chronicle of cross-repository architectural decisions, contract vers
 - **Verdict:** PASS
 - **Summary:** Brought `weather-stats` up to the pelipaiva/football-stats monastic pack (`ROLL.md`, Chapter/Visitation/Rebuttal/Handoff rites, `monastic-visit.yml`). Replaced stub rites in `floorball-stats` and `basketball-stats`. Federation README and `run-federation-checks.mjs` now agree: 7 sovereign monasteries + this kattorepo.
 
+## 2026-09-12 — Chapter of Faults: Production lag divided by monastery
+- **Office / Author:** Abbas Primas & Cellarer (per house)
+- **Scope:** all 7 monasteries + kattorepo + `monastic-governance`
+- **Contract Impact:** None
+- **Verdict:** PASS WITH FINDINGS
+- **Summary:** Independent remotes are the architecture. Lefthook no longer calls `../scripts/git-guard.mjs`; each house vendors `scripts/git-guard.mjs`. Pelipäivä CD now deploys the Pages **production** alias (Worker token remains a house fault). Production SHA lag and the missing weather Pages project are filed as `house` issues in the owning remotes. Ledger: `docs/GAPS.md`. Division canon: https://github.com/traali/monastic-governance/blob/main/docs/ISSUE_DIVISION.md. Parent: https://github.com/traali/sports-federation/issues/1.
+
 ---
 
 ## Format for New Cross-Repo Entries:
