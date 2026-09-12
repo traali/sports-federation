@@ -95,3 +95,6 @@ Append-only chronicle of cross-repository architectural decisions, contract vers
 - **Contract Impact:** None | Minor (v1.x non-breaking) | Major (v2.0 breaking with RFC)
 - **Summary:** <1-2 sentences on what was agreed and why>
 ```
+
+## 2026-09-12 — Discovery canon for stats houses
+- Floorball Vite SPA now has working SSBL search (commit ba637c0). Basketball and volleyball copy docs/DISCOVERY.md. Grok preview is not the monastery.
