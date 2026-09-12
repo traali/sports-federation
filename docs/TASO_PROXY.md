@@ -1,6 +1,6 @@
 # Torneopal cache — Cloudflare Worker
 
-Gold worker: `traali/football-stats/workers/taso-proxy`  
+Gold worker: `traali/taso-proxy`  
 Live: `https://taso-proxy.sakkoja.workers.dev`
 
 | Sport | Path prefix | Origin |
