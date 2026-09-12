@@ -1,0 +1,1405 @@
+{
+  "version": "1.0.0",
+  "kind": "codebase",
+  "project": {
+    "name": "sports-federation",
+    "languages": [
+      "typescript",
+      "javascript"
+    ],
+    "frameworks": [],
+    "description": "The General Chapter & Supreme Golden Test Suite for the Finnish Youth Sports Monastic Federation",
+    "analyzedAt": "2026-09-12T10:44:08.701Z",
+    "gitCommitHash": "b21dfe396373771bc605d9d70b311e044a9b4d04"
+  },
+  "nodes": [
+    {
+      "id": "pipeline:.github/workflows/supreme-golden-test.yml",
+      "type": "pipeline",
+      "name": "supreme-golden-test.yml",
+      "summary": "CI/CD workflow",
+      "tags": [
+        "ci"
+      ],
+      "complexity": "simple",
+      "filePath": ".github/workflows/supreme-golden-test.yml"
+    },
+    {
+      "id": "document:AGENTS.md",
+      "type": "document",
+      "name": "AGENTS.md",
+      "summary": "AGENTS.md — Rule of the Sports Federation (kattorepo)",
+      "tags": [
+        "docs"
+      ],
+      "complexity": "simple",
+      "filePath": "AGENTS.md"
+    },
+    {
+      "id": "document:GLOBAL_ROLL.md",
+      "type": "document",
+      "name": "GLOBAL_ROLL.md",
+      "summary": "GLOBAL_ROLL.md — The Multi-Repository Federated Chronicle",
+      "tags": [
+        "docs"
+      ],
+      "complexity": "moderate",
+      "filePath": "GLOBAL_ROLL.md"
+    },
+    {
+      "id": "document:PROJECT.md",
+      "type": "document",
+      "name": "PROJECT.md",
+      "summary": "Project: Sovereign Monastic Verification Suites & Deterministic Hooks",
+      "tags": [
+        "docs"
+      ],
+      "complexity": "moderate",
+      "filePath": "PROJECT.md"
+    },
+    {
+      "id": "document:README.md",
+      "type": "document",
+      "name": "README.md",
+      "summary": "🏛️ Sports Federation — The Monastic Congregation & Supreme Golden Bull",
+      "tags": [
+        "docs"
+      ],
+      "complexity": "simple",
+      "filePath": "README.md"
+    },
+    {
+      "id": "document:TEST_INFRA.md",
+      "type": "document",
+      "name": "TEST_INFRA.md",
+      "summary": "🏛️ Weather Stats Test Infrastructure & Methodology Specification (TEST_INFRA.md)",
+      "tags": [
+        "docs"
+      ],
+      "complexity": "moderate",
+      "filePath": "TEST_INFRA.md"
+    },
+    {
+      "id": "document:TEST_READY.md",
+      "type": "document",
+      "name": "TEST_READY.md",
+      "summary": "🎯 Weather-Stats Test Suite Readiness Report (TEST_READY.md)",
+      "tags": [
+        "docs"
+      ],
+      "complexity": "moderate",
+      "filePath": "TEST_READY.md"
+    },
+    {
+      "id": "file:contracts/index.ts",
+      "type": "file",
+      "name": "index.ts",
+      "summary": "eventId: string;",
+      "tags": [
+        "contract"
+      ],
+      "complexity": "moderate",
+      "filePath": "contracts/index.ts"
+    },
+    {
+      "id": "class:contracts/index.ts:MatchdayContextContract",
+      "type": "class",
+      "name": "MatchdayContextContract",
+      "summary": "class MatchdayContextContract in contracts/index.ts",
+      "tags": [
+        "contract",
+        "class"
+      ],
+      "complexity": "simple",
+      "filePath": "contracts/index.ts",
+      "lineRange": [
+        21,
+        21
+      ]
+    },
+    {
+      "id": "class:contracts/index.ts:ParkingRiskContract",
+      "type": "class",
+      "name": "ParkingRiskContract",
+      "summary": "class ParkingRiskContract in contracts/index.ts",
+      "tags": [
+        "contract",
+        "class"
+      ],
+      "complexity": "simple",
+      "filePath": "contracts/index.ts",
+      "lineRange": [
+        50,
+        50
+      ]
+    },
+    {
+      "id": "class:contracts/index.ts:SportStatsContract",
+      "type": "class",
+      "name": "SportStatsContract",
+      "summary": "class SportStatsContract in contracts/index.ts",
+      "tags": [
+        "contract",
+        "class"
+      ],
+      "complexity": "simple",
+      "filePath": "contracts/index.ts",
+      "lineRange": [
+        65,
+        65
+      ]
+    },
+    {
+      "id": "class:contracts/index.ts:CrossRepoQueryContract",
+      "type": "class",
+      "name": "CrossRepoQueryContract",
+      "summary": "class CrossRepoQueryContract in contracts/index.ts",
+      "tags": [
+        "contract",
+        "class"
+      ],
+      "complexity": "simple",
+      "filePath": "contracts/index.ts",
+      "lineRange": [
+        88,
+        88
+      ]
+    },
+    {
+      "id": "class:contracts/index.ts:WeatherForecastContract",
+      "type": "class",
+      "name": "WeatherForecastContract",
+      "summary": "class WeatherForecastContract in contracts/index.ts",
+      "tags": [
+        "contract",
+        "class"
+      ],
+      "complexity": "simple",
+      "filePath": "contracts/index.ts",
+      "lineRange": [
+        98,
+        98
+      ]
+    },
+    {
+      "id": "class:contracts/index.ts:SupportedSport",
+      "type": "class",
+      "name": "SupportedSport",
+      "summary": "class SupportedSport in contracts/index.ts",
+      "tags": [
+        "contract",
+        "class"
+      ],
+      "complexity": "simple",
+      "filePath": "contracts/index.ts",
+      "lineRange": [
+        16,
+        16
+      ]
+    },
+    {
+      "id": "function:contracts/index.ts:CONTRACT_VERSION",
+      "type": "function",
+      "name": "CONTRACT_VERSION",
+      "summary": "function CONTRACT_VERSION in contracts/index.ts",
+      "tags": [
+        "contract",
+        "function"
+      ],
+      "complexity": "simple",
+      "filePath": "contracts/index.ts",
+      "lineRange": [
+        14,
+        14
+      ]
+    },
+    {
+      "id": "endpoint:contracts/index.ts:taso",
+      "type": "endpoint",
+      "name": "Torneopal/TASO",
+      "summary": "Association REST client",
+      "tags": [
+        "taso",
+        "contract"
+      ],
+      "complexity": "moderate",
+      "filePath": "contracts/index.ts"
+    },
+    {
+      "id": "file:contracts/verify-contracts.mjs",
+      "type": "file",
+      "name": "verify-contracts.mjs",
+      "summary": "const __dirname = fileURLToPath(new URL('.', import.meta.url));",
+      "tags": [
+        "contract"
+      ],
+      "complexity": "moderate",
+      "filePath": "contracts/verify-contracts.mjs"
+    },
+    {
+      "id": "document:docs/DISCOVERY.md",
+      "type": "document",
+      "name": "DISCOVERY.md",
+      "summary": "Discovery Canon — every stats monastery",
+      "tags": [
+        "docs"
+      ],
+      "complexity": "simple",
+      "filePath": "docs/DISCOVERY.md"
+    },
+    {
+      "id": "document:docs/GAPS.md",
+      "type": "document",
+      "name": "GAPS.md",
+      "summary": "Federation Gap Ledger — 2026-09-12 visitation (remeasure 12:00 CEST)",
+      "tags": [
+        "docs"
+      ],
+      "complexity": "simple",
+      "filePath": "docs/GAPS.md"
+    },
+    {
+      "id": "document:docs/NEIGHBORS.md",
+      "type": "document",
+      "name": "NEIGHBORS.md",
+      "summary": "Chapter of Neighbors",
+      "tags": [
+        "docs"
+      ],
+      "complexity": "simple",
+      "filePath": "docs/NEIGHBORS.md"
+    },
+    {
+      "id": "document:docs/TASO_PROXY.md",
+      "type": "document",
+      "name": "TASO_PROXY.md",
+      "summary": "Torneopal cache — Cloudflare Worker",
+      "tags": [
+        "docs"
+      ],
+      "complexity": "simple",
+      "filePath": "docs/TASO_PROXY.md"
+    },
+    {
+      "id": "document:docs/architecture/code-complexity-and-decomposition-guide.md",
+      "type": "document",
+      "name": "code-complexity-and-decomposition-guide.md",
+      "summary": "Federation Code Complexity Audit & Architectural Decomposition Guide",
+      "tags": [
+        "docs"
+      ],
+      "complexity": "moderate",
+      "filePath": "docs/architecture/code-complexity-and-decomposition-guide.md"
+    },
+    {
+      "id": "document:docs/architecture/real-user-golden-test-specification.md",
+      "type": "document",
+      "name": "real-user-golden-test-specification.md",
+      "summary": "🏛️ Real-User Golden Test Specification: Monastic Youth Sports Federation",
+      "tags": [
+        "docs"
+      ],
+      "complexity": "complex",
+      "filePath": "docs/architecture/real-user-golden-test-specification.md"
+    },
+    {
+      "id": "document:docs/architecture/unified-sports-experience-blueprint.md",
+      "type": "document",
+      "name": "unified-sports-experience-blueprint.md",
+      "summary": "🏆 Unified Sports Experience Blueprint: \"Same to All\" Architecture (R3)",
+      "tags": [
+        "docs"
+      ],
+      "complexity": "complex",
+      "filePath": "docs/architecture/unified-sports-experience-blueprint.md"
+    },
+    {
+      "id": "document:docs/audit/federation-api-payload-audit.md",
+      "type": "document",
+      "name": "federation-api-payload-audit.md",
+      "summary": "Finnish Sports Federation API Call & Payload Truth Audit",
+      "tags": [
+        "docs"
+      ],
+      "complexity": "complex",
+      "filePath": "docs/audit/federation-api-payload-audit.md"
+    },
+    {
+      "id": "document:docs/cloudflare-deployments.md",
+      "type": "document",
+      "name": "cloudflare-deployments.md",
+      "summary": "Cloudflare Pages Edge Deployment & Domain Matrix",
+      "tags": [
+        "docs"
+      ],
+      "complexity": "simple",
+      "filePath": "docs/cloudflare-deployments.md"
+    },
+    {
+      "id": "document:docs/matrix/cross-sport-calculation-matrix.md",
+      "type": "document",
+      "name": "cross-sport-calculation-matrix.md",
+      "summary": "Cross-Sport Feature & Calculation Capability Matrix",
+      "tags": [
+        "docs"
+      ],
+      "complexity": "complex",
+      "filePath": "docs/matrix/cross-sport-calculation-matrix.md"
+    },
+    {
+      "id": "document:docs/plans/TEST_PLAN_STANDARD.md",
+      "type": "document",
+      "name": "TEST_PLAN_STANDARD.md",
+      "summary": "📐 Test Plan Standard & Specification Contract",
+      "tags": [
+        "docs"
+      ],
+      "complexity": "moderate",
+      "filePath": "docs/plans/TEST_PLAN_STANDARD.md"
+    },
+    {
+      "id": "document:docs/plans/basketball-youth-stats-plan.md",
+      "type": "document",
+      "name": "basketball-youth-stats-plan.md",
+      "summary": "Authentic Youth Basketball (Koripallo) Statistics & Capabilities Plan",
+      "tags": [
+        "docs"
+      ],
+      "complexity": "moderate",
+      "filePath": "docs/plans/basketball-youth-stats-plan.md"
+    },
+    {
+      "id": "document:docs/plans/floorball-youth-stats-plan.md",
+      "type": "document",
+      "name": "floorball-youth-stats-plan.md",
+      "summary": "Authentic Youth Floorball (Salibandy) Statistics & Capabilities Plan",
+      "tags": [
+        "docs"
+      ],
+      "complexity": "moderate",
+      "filePath": "docs/plans/floorball-youth-stats-plan.md"
+    },
+    {
+      "id": "document:docs/plans/football-youth-stats-plan.md",
+      "type": "document",
+      "name": "football-youth-stats-plan.md",
+      "summary": "Authentic Youth Football (Jalkapallo) Statistics & Capabilities Plan",
+      "tags": [
+        "docs"
+      ],
+      "complexity": "moderate",
+      "filePath": "docs/plans/football-youth-stats-plan.md"
+    },
+    {
+      "id": "document:docs/plans/volleyball-youth-stats-plan.md",
+      "type": "document",
+      "name": "volleyball-youth-stats-plan.md",
+      "summary": "Authentic Youth Volleyball (Lentopallo) Statistics & Capabilities Plan",
+      "tags": [
+        "docs"
+      ],
+      "complexity": "moderate",
+      "filePath": "docs/plans/volleyball-youth-stats-plan.md"
+    },
+    {
+      "id": "document:docs/supreme-golden-test.md",
+      "type": "document",
+      "name": "supreme-golden-test.md",
+      "summary": "👑 Supreme Golden End-User Test (Abbas Primas)",
+      "tags": [
+        "docs"
+      ],
+      "complexity": "simple",
+      "filePath": "docs/supreme-golden-test.md"
+    },
+    {
+      "id": "config:federation.neighbors.json",
+      "type": "config",
+      "name": "federation.neighbors.json",
+      "summary": "Config federation.neighbors.json",
+      "tags": [
+        "config"
+      ],
+      "complexity": "simple",
+      "filePath": "federation.neighbors.json"
+    },
+    {
+      "id": "config:lefthook.yml",
+      "type": "config",
+      "name": "lefthook.yml",
+      "summary": "Config lefthook.yml",
+      "tags": [
+        "config"
+      ],
+      "complexity": "simple",
+      "filePath": "lefthook.yml"
+    },
+    {
+      "id": "document:llms.txt",
+      "type": "document",
+      "name": "llms.txt",
+      "summary": "Sports Federation — The Monastic Multi-Repo Ecosystem",
+      "tags": [
+        "docs"
+      ],
+      "complexity": "simple",
+      "filePath": "llms.txt"
+    },
+    {
+      "id": "config:package.json",
+      "type": "config",
+      "name": "package.json",
+      "summary": "Config package.json",
+      "tags": [
+        "config"
+      ],
+      "complexity": "simple",
+      "filePath": "package.json"
+    },
+    {
+      "id": "file:scripts/audit-codebases.mjs",
+      "type": "file",
+      "name": "audit-codebases.mjs",
+      "summary": "const monasteries = [",
+      "tags": [
+        "tooling"
+      ],
+      "complexity": "simple",
+      "filePath": "scripts/audit-codebases.mjs"
+    },
+    {
+      "id": "file:scripts/browser-live-audit.mjs",
+      "type": "file",
+      "name": "browser-live-audit.mjs",
+      "summary": "const SCREENSHOT_DIR = \"C:/Users/aoinonen/.gemini/antigravity/brain/762e3f78-1395-478c-9b87-99a672b17e04\";",
+      "tags": [
+        "tooling"
+      ],
+      "complexity": "simple",
+      "filePath": "scripts/browser-live-audit.mjs"
+    },
+    {
+      "id": "file:scripts/challenger-domain-stress.mjs",
+      "type": "file",
+      "name": "challenger-domain-stress.mjs",
+      "summary": "#!/usr/bin/env node",
+      "tags": [
+        "tooling"
+      ],
+      "complexity": "simple",
+      "filePath": "scripts/challenger-domain-stress.mjs"
+    },
+    {
+      "id": "file:scripts/check-neighbors.mjs",
+      "type": "file",
+      "name": "check-neighbors.mjs",
+      "summary": "#!/usr/bin/env node",
+      "tags": [
+        "tooling"
+      ],
+      "complexity": "complex",
+      "filePath": "scripts/check-neighbors.mjs"
+    },
+    {
+      "id": "endpoint:scripts/check-neighbors.mjs:taso",
+      "type": "endpoint",
+      "name": "Torneopal/TASO",
+      "summary": "Association REST client",
+      "tags": [
+        "taso",
+        "tooling"
+      ],
+      "complexity": "moderate",
+      "filePath": "scripts/check-neighbors.mjs"
+    },
+    {
+      "id": "file:scripts/find-basket-key.mjs",
+      "type": "file",
+      "name": "find-basket-key.mjs",
+      "summary": "async function findBasketKey() {",
+      "tags": [
+        "tooling"
+      ],
+      "complexity": "simple",
+      "filePath": "scripts/find-basket-key.mjs"
+    },
+    {
+      "id": "endpoint:scripts/find-basket-key.mjs:taso",
+      "type": "endpoint",
+      "name": "Torneopal/TASO",
+      "summary": "Association REST client",
+      "tags": [
+        "taso",
+        "tooling"
+      ],
+      "complexity": "moderate",
+      "filePath": "scripts/find-basket-key.mjs"
+    },
+    {
+      "id": "file:scripts/git-guard.mjs",
+      "type": "file",
+      "name": "git-guard.mjs",
+      "summary": "#!/usr/bin/env node",
+      "tags": [
+        "tooling"
+      ],
+      "complexity": "moderate",
+      "filePath": "scripts/git-guard.mjs"
+    },
+    {
+      "id": "file:scripts/inspect-basket.mjs",
+      "type": "file",
+      "name": "inspect-basket.mjs",
+      "summary": "async function inspectBasketData() {",
+      "tags": [
+        "tooling"
+      ],
+      "complexity": "simple",
+      "filePath": "scripts/inspect-basket.mjs"
+    },
+    {
+      "id": "endpoint:scripts/inspect-basket.mjs:taso",
+      "type": "endpoint",
+      "name": "Torneopal/TASO",
+      "summary": "Association REST client",
+      "tags": [
+        "taso",
+        "tooling"
+      ],
+      "complexity": "moderate",
+      "filePath": "scripts/inspect-basket.mjs"
+    },
+    {
+      "id": "file:scripts/install-all-hooks.mjs",
+      "type": "file",
+      "name": "install-all-hooks.mjs",
+      "summary": "const ROOT = resolve(process.cwd());",
+      "tags": [
+        "tooling"
+      ],
+      "complexity": "simple",
+      "filePath": "scripts/install-all-hooks.mjs"
+    },
+    {
+      "id": "file:scripts/manual-verifications-playwright.mjs",
+      "type": "file",
+      "name": "manual-verifications-playwright.mjs",
+      "summary": "const __filename = fileURLToPath(import.meta.url);",
+      "tags": [
+        "tooling"
+      ],
+      "complexity": "complex",
+      "filePath": "scripts/manual-verifications-playwright.mjs"
+    },
+    {
+      "id": "function:scripts/manual-verifications-playwright.mjs:getUpcomingSaturdayDateISO",
+      "type": "function",
+      "name": "getUpcomingSaturdayDateISO",
+      "summary": "function getUpcomingSaturdayDateISO in scripts/manual-verifications-playwright.mjs",
+      "tags": [
+        "tooling",
+        "function"
+      ],
+      "complexity": "simple",
+      "filePath": "scripts/manual-verifications-playwright.mjs",
+      "lineRange": [
+        62,
+        62
+      ]
+    },
+    {
+      "id": "function:scripts/manual-verifications-playwright.mjs:resolvePlaywrightChromium",
+      "type": "function",
+      "name": "resolvePlaywrightChromium",
+      "summary": "function resolvePlaywrightChromium in scripts/manual-verifications-playwright.mjs",
+      "tags": [
+        "tooling",
+        "function"
+      ],
+      "complexity": "simple",
+      "filePath": "scripts/manual-verifications-playwright.mjs",
+      "lineRange": [
+        70,
+        70
+      ]
+    },
+    {
+      "id": "function:scripts/manual-verifications-playwright.mjs:runManualVerifications",
+      "type": "function",
+      "name": "runManualVerifications",
+      "summary": "function runManualVerifications in scripts/manual-verifications-playwright.mjs",
+      "tags": [
+        "tooling",
+        "function"
+      ],
+      "complexity": "simple",
+      "filePath": "scripts/manual-verifications-playwright.mjs",
+      "lineRange": [
+        102,
+        102
+      ]
+    },
+    {
+      "id": "endpoint:scripts/manual-verifications-playwright.mjs:taso",
+      "type": "endpoint",
+      "name": "Torneopal/TASO",
+      "summary": "Association REST client",
+      "tags": [
+        "taso",
+        "tooling"
+      ],
+      "complexity": "moderate",
+      "filePath": "scripts/manual-verifications-playwright.mjs"
+    },
+    {
+      "id": "file:scripts/real-user-golden-test.mjs",
+      "type": "file",
+      "name": "real-user-golden-test.mjs",
+      "summary": "const __filename = fileURLToPath(import.meta.url);",
+      "tags": [
+        "tooling"
+      ],
+      "complexity": "complex",
+      "filePath": "scripts/real-user-golden-test.mjs"
+    },
+    {
+      "id": "function:scripts/real-user-golden-test.mjs:getUpcomingSaturdayDateISO",
+      "type": "function",
+      "name": "getUpcomingSaturdayDateISO",
+      "summary": "function getUpcomingSaturdayDateISO in scripts/real-user-golden-test.mjs",
+      "tags": [
+        "tooling",
+        "function"
+      ],
+      "complexity": "simple",
+      "filePath": "scripts/real-user-golden-test.mjs",
+      "lineRange": [
+        53,
+        53
+      ]
+    },
+    {
+      "id": "function:scripts/real-user-golden-test.mjs:resolvePlaywrightChromium",
+      "type": "function",
+      "name": "resolvePlaywrightChromium",
+      "summary": "function resolvePlaywrightChromium in scripts/real-user-golden-test.mjs",
+      "tags": [
+        "tooling",
+        "function"
+      ],
+      "complexity": "simple",
+      "filePath": "scripts/real-user-golden-test.mjs",
+      "lineRange": [
+        64,
+        64
+      ]
+    },
+    {
+      "id": "function:scripts/real-user-golden-test.mjs:runRealUserGoldenTestSuite",
+      "type": "function",
+      "name": "runRealUserGoldenTestSuite",
+      "summary": "function runRealUserGoldenTestSuite in scripts/real-user-golden-test.mjs",
+      "tags": [
+        "tooling",
+        "function"
+      ],
+      "complexity": "simple",
+      "filePath": "scripts/real-user-golden-test.mjs",
+      "lineRange": [
+        128,
+        128
+      ]
+    },
+    {
+      "id": "endpoint:scripts/real-user-golden-test.mjs:taso",
+      "type": "endpoint",
+      "name": "Torneopal/TASO",
+      "summary": "Association REST client",
+      "tags": [
+        "taso",
+        "tooling"
+      ],
+      "complexity": "moderate",
+      "filePath": "scripts/real-user-golden-test.mjs"
+    },
+    {
+      "id": "file:scripts/run-federation-checks.mjs",
+      "type": "file",
+      "name": "run-federation-checks.mjs",
+      "summary": "const FED_ROOT = resolve(process.cwd());",
+      "tags": [
+        "tooling"
+      ],
+      "complexity": "moderate",
+      "filePath": "scripts/run-federation-checks.mjs"
+    },
+    {
+      "id": "file:scripts/supreme-golden-test.mjs",
+      "type": "file",
+      "name": "supreme-golden-test.mjs",
+      "summary": "extractTeamIdFromUrl,",
+      "tags": [
+        "tooling"
+      ],
+      "complexity": "complex",
+      "filePath": "scripts/supreme-golden-test.mjs"
+    },
+    {
+      "id": "endpoint:scripts/supreme-golden-test.mjs:taso",
+      "type": "endpoint",
+      "name": "Torneopal/TASO",
+      "summary": "Association REST client",
+      "tags": [
+        "taso",
+        "tooling"
+      ],
+      "complexity": "moderate",
+      "filePath": "scripts/supreme-golden-test.mjs"
+    },
+    {
+      "id": "file:scripts/test-all-webmcp.mjs",
+      "type": "file",
+      "name": "test-all-webmcp.mjs",
+      "summary": "const ROOT = process.cwd();",
+      "tags": [
+        "tooling"
+      ],
+      "complexity": "moderate",
+      "filePath": "scripts/test-all-webmcp.mjs"
+    },
+    {
+      "id": "file:scripts/understand.mjs",
+      "type": "file",
+      "name": "understand.mjs",
+      "summary": "#!/usr/bin/env node",
+      "tags": [
+        "tooling"
+      ],
+      "complexity": "complex",
+      "filePath": "scripts/understand.mjs"
+    },
+    {
+      "id": "endpoint:scripts/understand.mjs:taso",
+      "type": "endpoint",
+      "name": "Torneopal/TASO",
+      "summary": "Association REST client",
+      "tags": [
+        "taso",
+        "tooling"
+      ],
+      "complexity": "moderate",
+      "filePath": "scripts/understand.mjs"
+    },
+    {
+      "id": "file:scripts/verify-build-versions.mjs",
+      "type": "file",
+      "name": "verify-build-versions.mjs",
+      "summary": "const services = [",
+      "tags": [
+        "tooling"
+      ],
+      "complexity": "moderate",
+      "filePath": "scripts/verify-build-versions.mjs"
+    },
+    {
+      "id": "function:scripts/verify-build-versions.mjs:verifyLiveBuildVersions",
+      "type": "function",
+      "name": "verifyLiveBuildVersions",
+      "summary": "function verifyLiveBuildVersions in scripts/verify-build-versions.mjs",
+      "tags": [
+        "tooling",
+        "function"
+      ],
+      "complexity": "simple",
+      "filePath": "scripts/verify-build-versions.mjs",
+      "lineRange": [
+        12,
+        12
+      ]
+    },
+    {
+      "id": "endpoint:scripts/verify-build-versions.mjs:taso",
+      "type": "endpoint",
+      "name": "Torneopal/TASO",
+      "summary": "Association REST client",
+      "tags": [
+        "taso",
+        "tooling"
+      ],
+      "complexity": "moderate",
+      "filePath": "scripts/verify-build-versions.mjs"
+    },
+    {
+      "id": "file:scripts/weather-e2e-tests.mjs",
+      "type": "file",
+      "name": "weather-e2e-tests.mjs",
+      "summary": "#!/usr/bin/env node",
+      "tags": [
+        "tooling"
+      ],
+      "complexity": "complex",
+      "filePath": "scripts/weather-e2e-tests.mjs"
+    },
+    {
+      "id": "function:scripts/weather-e2e-tests.mjs:calculateFmiFeelsLike",
+      "type": "function",
+      "name": "calculateFmiFeelsLike",
+      "summary": "function calculateFmiFeelsLike in scripts/weather-e2e-tests.mjs",
+      "tags": [
+        "tooling",
+        "function"
+      ],
+      "complexity": "simple",
+      "filePath": "scripts/weather-e2e-tests.mjs",
+      "lineRange": [
+        81,
+        81
+      ]
+    },
+    {
+      "id": "function:scripts/weather-e2e-tests.mjs:calculateJagtiWindChill",
+      "type": "function",
+      "name": "calculateJagtiWindChill",
+      "summary": "function calculateJagtiWindChill in scripts/weather-e2e-tests.mjs",
+      "tags": [
+        "tooling",
+        "function"
+      ],
+      "complexity": "simple",
+      "filePath": "scripts/weather-e2e-tests.mjs",
+      "lineRange": [
+        107,
+        107
+      ]
+    },
+    {
+      "id": "function:scripts/weather-e2e-tests.mjs:classifyTurfCondition",
+      "type": "function",
+      "name": "classifyTurfCondition",
+      "summary": "function classifyTurfCondition in scripts/weather-e2e-tests.mjs",
+      "tags": [
+        "tooling",
+        "function"
+      ],
+      "complexity": "simple",
+      "filePath": "scripts/weather-e2e-tests.mjs",
+      "lineRange": [
+        126,
+        126
+      ]
+    },
+    {
+      "id": "function:scripts/weather-e2e-tests.mjs:turfConditionToLabelFi",
+      "type": "function",
+      "name": "turfConditionToLabelFi",
+      "summary": "function turfConditionToLabelFi in scripts/weather-e2e-tests.mjs",
+      "tags": [
+        "tooling",
+        "function"
+      ],
+      "complexity": "simple",
+      "filePath": "scripts/weather-e2e-tests.mjs",
+      "lineRange": [
+        132,
+        132
+      ]
+    },
+    {
+      "id": "function:scripts/weather-e2e-tests.mjs:calculateHaversineKm",
+      "type": "function",
+      "name": "calculateHaversineKm",
+      "summary": "function calculateHaversineKm in scripts/weather-e2e-tests.mjs",
+      "tags": [
+        "tooling",
+        "function"
+      ],
+      "complexity": "simple",
+      "filePath": "scripts/weather-e2e-tests.mjs",
+      "lineRange": [
+        149,
+        149
+      ]
+    },
+    {
+      "id": "function:scripts/weather-e2e-tests.mjs:evaluateLightningSafetyRule",
+      "type": "function",
+      "name": "evaluateLightningSafetyRule",
+      "summary": "function evaluateLightningSafetyRule in scripts/weather-e2e-tests.mjs",
+      "tags": [
+        "tooling",
+        "function"
+      ],
+      "complexity": "simple",
+      "filePath": "scripts/weather-e2e-tests.mjs",
+      "lineRange": [
+        168,
+        168
+      ]
+    },
+    {
+      "id": "function:scripts/weather-e2e-tests.mjs:buildRadarSatelliteLayerPayload",
+      "type": "function",
+      "name": "buildRadarSatelliteLayerPayload",
+      "summary": "function buildRadarSatelliteLayerPayload in scripts/weather-e2e-tests.mjs",
+      "tags": [
+        "tooling",
+        "function"
+      ],
+      "complexity": "simple",
+      "filePath": "scripts/weather-e2e-tests.mjs",
+      "lineRange": [
+        284,
+        284
+      ]
+    },
+    {
+      "id": "file:scripts/webmcp-prod-golden-test.mjs",
+      "type": "file",
+      "name": "webmcp-prod-golden-test.mjs",
+      "summary": "console.log('\\n' + '═'.repeat(76))",
+      "tags": [
+        "tooling"
+      ],
+      "complexity": "complex",
+      "filePath": "scripts/webmcp-prod-golden-test.mjs"
+    },
+    {
+      "id": "endpoint:scripts/webmcp-prod-golden-test.mjs:taso",
+      "type": "endpoint",
+      "name": "Torneopal/TASO",
+      "summary": "Association REST client",
+      "tags": [
+        "taso",
+        "tooling"
+      ],
+      "complexity": "moderate",
+      "filePath": "scripts/webmcp-prod-golden-test.mjs"
+    },
+    {
+      "id": "concept:the-rule",
+      "type": "concept",
+      "name": "The Rule (AGENTS.md)",
+      "summary": "Supreme house rule, <1500 words",
+      "tags": [
+        "governance"
+      ],
+      "complexity": "simple",
+      "filePath": "AGENTS.md"
+    },
+    {
+      "id": "concept:chapter-of-neighbors",
+      "type": "concept",
+      "name": "Chapter of Neighbors",
+      "summary": "Visit-gate that freezes contracts and peer AGENTS.md",
+      "tags": [
+        "governance",
+        "treaty"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "schema:contracts/index.ts",
+      "type": "schema",
+      "name": "Federation contracts",
+      "summary": "Canonical v1.0.0 treaty adapters",
+      "tags": [
+        "treaty"
+      ],
+      "complexity": "moderate",
+      "filePath": "contracts/index.ts"
+    }
+  ],
+  "edges": [
+    {
+      "source": "pipeline:.github/workflows/supreme-golden-test.yml",
+      "target": "document:AGENTS.md",
+      "type": "triggers",
+      "direction": "forward",
+      "weight": 0.4
+    },
+    {
+      "source": "file:contracts/index.ts",
+      "target": "class:contracts/index.ts:MatchdayContextContract",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:contracts/index.ts",
+      "target": "class:contracts/index.ts:ParkingRiskContract",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:contracts/index.ts",
+      "target": "class:contracts/index.ts:SportStatsContract",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:contracts/index.ts",
+      "target": "class:contracts/index.ts:CrossRepoQueryContract",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:contracts/index.ts",
+      "target": "class:contracts/index.ts:WeatherForecastContract",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:contracts/index.ts",
+      "target": "class:contracts/index.ts:SupportedSport",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:contracts/index.ts",
+      "target": "function:contracts/index.ts:CONTRACT_VERSION",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:contracts/index.ts",
+      "target": "endpoint:contracts/index.ts:taso",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:scripts/check-neighbors.mjs",
+      "target": "endpoint:scripts/check-neighbors.mjs:taso",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:scripts/find-basket-key.mjs",
+      "target": "endpoint:scripts/find-basket-key.mjs:taso",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:scripts/inspect-basket.mjs",
+      "target": "endpoint:scripts/inspect-basket.mjs:taso",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:scripts/manual-verifications-playwright.mjs",
+      "target": "function:scripts/manual-verifications-playwright.mjs:getUpcomingSaturdayDateISO",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:scripts/manual-verifications-playwright.mjs",
+      "target": "function:scripts/manual-verifications-playwright.mjs:resolvePlaywrightChromium",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:scripts/manual-verifications-playwright.mjs",
+      "target": "function:scripts/manual-verifications-playwright.mjs:runManualVerifications",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:scripts/manual-verifications-playwright.mjs",
+      "target": "endpoint:scripts/manual-verifications-playwright.mjs:taso",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:scripts/real-user-golden-test.mjs",
+      "target": "function:scripts/real-user-golden-test.mjs:getUpcomingSaturdayDateISO",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:scripts/real-user-golden-test.mjs",
+      "target": "function:scripts/real-user-golden-test.mjs:resolvePlaywrightChromium",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:scripts/real-user-golden-test.mjs",
+      "target": "function:scripts/real-user-golden-test.mjs:runRealUserGoldenTestSuite",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:scripts/real-user-golden-test.mjs",
+      "target": "endpoint:scripts/real-user-golden-test.mjs:taso",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:scripts/supreme-golden-test.mjs",
+      "target": "endpoint:scripts/supreme-golden-test.mjs:taso",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:scripts/understand.mjs",
+      "target": "endpoint:scripts/understand.mjs:taso",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:scripts/verify-build-versions.mjs",
+      "target": "function:scripts/verify-build-versions.mjs:verifyLiveBuildVersions",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:scripts/verify-build-versions.mjs",
+      "target": "endpoint:scripts/verify-build-versions.mjs:taso",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:scripts/weather-e2e-tests.mjs",
+      "target": "function:scripts/weather-e2e-tests.mjs:calculateFmiFeelsLike",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:scripts/weather-e2e-tests.mjs",
+      "target": "function:scripts/weather-e2e-tests.mjs:calculateJagtiWindChill",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:scripts/weather-e2e-tests.mjs",
+      "target": "function:scripts/weather-e2e-tests.mjs:classifyTurfCondition",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:scripts/weather-e2e-tests.mjs",
+      "target": "function:scripts/weather-e2e-tests.mjs:turfConditionToLabelFi",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:scripts/weather-e2e-tests.mjs",
+      "target": "function:scripts/weather-e2e-tests.mjs:calculateHaversineKm",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:scripts/weather-e2e-tests.mjs",
+      "target": "function:scripts/weather-e2e-tests.mjs:evaluateLightningSafetyRule",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:scripts/weather-e2e-tests.mjs",
+      "target": "function:scripts/weather-e2e-tests.mjs:buildRadarSatelliteLayerPayload",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:scripts/webmcp-prod-golden-test.mjs",
+      "target": "endpoint:scripts/webmcp-prod-golden-test.mjs:taso",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "document:AGENTS.md",
+      "target": "concept:the-rule",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:contracts/index.ts",
+      "target": "schema:contracts/index.ts",
+      "type": "defines_schema",
+      "direction": "forward",
+      "weight": 1
+    }
+  ],
+  "layers": [
+    {
+      "id": "ci",
+      "name": "Ci",
+      "description": "ci layer",
+      "nodeIds": [
+        "pipeline:.github/workflows/supreme-golden-test.yml"
+      ]
+    },
+    {
+      "id": "docs",
+      "name": "Docs",
+      "description": "docs layer",
+      "nodeIds": [
+        "document:AGENTS.md",
+        "document:GLOBAL_ROLL.md",
+        "document:PROJECT.md",
+        "document:README.md",
+        "document:TEST_INFRA.md",
+        "document:TEST_READY.md",
+        "document:docs/DISCOVERY.md",
+        "document:docs/GAPS.md",
+        "document:docs/NEIGHBORS.md",
+        "document:docs/TASO_PROXY.md",
+        "document:docs/architecture/code-complexity-and-decomposition-guide.md",
+        "document:docs/architecture/real-user-golden-test-specification.md",
+        "document:docs/architecture/unified-sports-experience-blueprint.md",
+        "document:docs/audit/federation-api-payload-audit.md",
+        "document:docs/cloudflare-deployments.md",
+        "document:docs/matrix/cross-sport-calculation-matrix.md",
+        "document:docs/plans/TEST_PLAN_STANDARD.md",
+        "document:docs/plans/basketball-youth-stats-plan.md",
+        "document:docs/plans/floorball-youth-stats-plan.md",
+        "document:docs/plans/football-youth-stats-plan.md",
+        "document:docs/plans/volleyball-youth-stats-plan.md",
+        "document:docs/supreme-golden-test.md",
+        "document:llms.txt"
+      ]
+    },
+    {
+      "id": "app",
+      "name": "App",
+      "description": "app layer",
+      "nodeIds": []
+    },
+    {
+      "id": "contract",
+      "name": "Contract",
+      "description": "contract layer",
+      "nodeIds": [
+        "file:contracts/index.ts",
+        "class:contracts/index.ts:MatchdayContextContract",
+        "class:contracts/index.ts:ParkingRiskContract",
+        "class:contracts/index.ts:SportStatsContract",
+        "class:contracts/index.ts:CrossRepoQueryContract",
+        "class:contracts/index.ts:WeatherForecastContract",
+        "class:contracts/index.ts:SupportedSport",
+        "function:contracts/index.ts:CONTRACT_VERSION",
+        "file:contracts/verify-contracts.mjs"
+      ]
+    },
+    {
+      "id": "config",
+      "name": "Config",
+      "description": "config layer",
+      "nodeIds": [
+        "config:federation.neighbors.json",
+        "config:lefthook.yml",
+        "config:package.json"
+      ]
+    },
+    {
+      "id": "tooling",
+      "name": "Tooling",
+      "description": "tooling layer",
+      "nodeIds": [
+        "file:scripts/audit-codebases.mjs",
+        "file:scripts/browser-live-audit.mjs",
+        "file:scripts/challenger-domain-stress.mjs",
+        "file:scripts/check-neighbors.mjs",
+        "file:scripts/find-basket-key.mjs",
+        "file:scripts/git-guard.mjs",
+        "file:scripts/inspect-basket.mjs",
+        "file:scripts/install-all-hooks.mjs",
+        "file:scripts/manual-verifications-playwright.mjs",
+        "function:scripts/manual-verifications-playwright.mjs:getUpcomingSaturdayDateISO",
+        "function:scripts/manual-verifications-playwright.mjs:resolvePlaywrightChromium",
+        "function:scripts/manual-verifications-playwright.mjs:runManualVerifications",
+        "file:scripts/real-user-golden-test.mjs",
+        "function:scripts/real-user-golden-test.mjs:getUpcomingSaturdayDateISO",
+        "function:scripts/real-user-golden-test.mjs:resolvePlaywrightChromium",
+        "function:scripts/real-user-golden-test.mjs:runRealUserGoldenTestSuite",
+        "file:scripts/run-federation-checks.mjs",
+        "file:scripts/supreme-golden-test.mjs",
+        "file:scripts/test-all-webmcp.mjs",
+        "file:scripts/understand.mjs",
+        "file:scripts/verify-build-versions.mjs",
+        "function:scripts/verify-build-versions.mjs:verifyLiveBuildVersions",
+        "file:scripts/weather-e2e-tests.mjs",
+        "function:scripts/weather-e2e-tests.mjs:calculateFmiFeelsLike",
+        "function:scripts/weather-e2e-tests.mjs:calculateJagtiWindChill",
+        "function:scripts/weather-e2e-tests.mjs:classifyTurfCondition",
+        "function:scripts/weather-e2e-tests.mjs:turfConditionToLabelFi",
+        "function:scripts/weather-e2e-tests.mjs:calculateHaversineKm",
+        "function:scripts/weather-e2e-tests.mjs:evaluateLightningSafetyRule",
+        "function:scripts/weather-e2e-tests.mjs:buildRadarSatelliteLayerPayload",
+        "file:scripts/webmcp-prod-golden-test.mjs"
+      ]
+    }
+  ],
+  "tour": [
+    {
+      "order": 1,
+      "title": "The Rule",
+      "description": "Read AGENTS.md before changing code.",
+      "nodeIds": [
+        "document:AGENTS.md",
+        "concept:the-rule"
+      ]
+    },
+    {
+      "order": 2,
+      "title": "Treaty",
+      "description": "Contract fields this house must keep.",
+      "nodeIds": [
+        "schema:contracts/index.ts"
+      ]
+    },
+    {
+      "order": 3,
+      "title": "Services",
+      "description": "API clients and TASO cache policy.",
+      "nodeIds": [
+        "endpoint:contracts/index.ts:taso",
+        "endpoint:scripts/check-neighbors.mjs:taso",
+        "endpoint:scripts/find-basket-key.mjs:taso",
+        "endpoint:scripts/inspect-basket.mjs:taso",
+        "endpoint:scripts/manual-verifications-playwright.mjs:taso",
+        "endpoint:scripts/real-user-golden-test.mjs:taso",
+        "endpoint:scripts/supreme-golden-test.mjs:taso",
+        "endpoint:scripts/understand.mjs:taso"
+      ]
+    },
+    {
+      "order": 5,
+      "title": "Visit gate",
+      "description": "npm run visit + check-neighbors.mjs",
+      "nodeIds": [
+        "file:scripts/check-neighbors.mjs",
+        "endpoint:scripts/check-neighbors.mjs:taso"
+      ]
+    }
+  ]
+}

@@ -16,3 +16,4 @@ dist/
 *.png
 .agents/
 .agent/visitations/neighbors-*.json
+.ua/intermediate/

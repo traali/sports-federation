@@ -1,0 +1,9 @@
+{
+  "tool": "federation-understand",
+  "compatibleWith": "Egonex-AI/Understand-Anything 1.0.0",
+  "generatedAt": "2026-09-12T10:44:08.705Z",
+  "repo": "sports-federation",
+  "commit": "b21dfe396373771bc605d9d70b311e044a9b4d04",
+  "nodeCount": 80,
+  "edgeCount": 34
+}

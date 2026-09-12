@@ -16,7 +16,8 @@
     "test:manual-verifications": "node scripts/manual-verifications-playwright.mjs",
     "test:webmcp": "npx tsx scripts/test-all-webmcp.mjs",
     "test:neighbors": "node scripts/check-neighbors.mjs --all",
-    "hooks:install": "node scripts/install-all-hooks.mjs"
+    "hooks:install": "node scripts/install-all-hooks.mjs",
+    "understand": "node scripts/understand.mjs"
   },
   "keywords": [
     "monastic-architecture",
