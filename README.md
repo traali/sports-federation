@@ -1,14 +1,14 @@
 # 🏛️ Sports Federation — The Monastic Congregation & Supreme Golden Bull
 
 [![Supreme Golden Test](https://github.com/traali/sports-federation/actions/workflows/supreme-golden-test.yml/badge.svg)](https://github.com/traali/sports-federation/actions/workflows/supreme-golden-test.yml)
-[![Ecosystem](https://img.shields.io/badge/monasteries-6%20sovereign%20repos-emerald.svg)](https://github.com/traali/sports-federation)
+[![Ecosystem](https://img.shields.io/badge/monasteries-7%20sovereign%20repos-emerald.svg)](https://github.com/traali/sports-federation)
 [![Cloudflare Pages](https://img.shields.io/badge/edge-cloudflare%20pages-orange.svg)](https://pelipaiva.pages.dev)
 
 ## 1. Problem
 Finnish youth sports families face weekend scheduling chaos with multiple children competing across different federations (Palloliitto football, SSBL salibandy, Basket.fi basketball, lentopallo). In a single monolith codebase, conflicting data schemas and bloated LLM context windows lead to AI hallucinations and fragile codebases.
 
 ## 2. Solution
-**The Monastic Multi-Repo Federation** splits the ecosystem into 6 sovereign repositories (monasteries). Each monastery maintains minimal context (< 1,500 word `AGENTS.md`) and passes a local clean-room gate (`npm run visit`). The central **Supreme Golden End-User Test Suite** (*Abbas Primas*) acts as the neutral outside arbiter validating treaties and simulating a real Finnish family matchday from start to finish.
+**The Monastic Multi-Repo Federation** splits the ecosystem into 7 sovereign repositories (monasteries). Each monastery maintains minimal context (< 1,500 word `AGENTS.md`) and passes a local clean-room gate (`npm run visit`). The central **Supreme Golden End-User Test Suite** (*Abbas Primas*) acts as the neutral outside arbiter validating treaties and simulating a real Finnish family matchday from start to finish.
 
 ---
 
@@ -18,10 +18,13 @@ Finnish youth sports families face weekend scheduling chaos with multiple childr
 | :--- | :--- | :--- | :--- |
 | **📱 Pelipäivä** | [`traali/pelipaiva`](https://github.com/traali/pelipaiva) | [`https://pelipaiva.pages.dev`](https://pelipaiva.pages.dev) | Family Sports Hub, Schedule Conflict Engine & Live Toast Streamer |
 | **🅿️ ParkkiS** | [`traali/Parkkis`](https://github.com/traali/Parkkis) | [`https://parkkis.pages.dev`](https://parkkis.pages.dev) | Spatial Parking Radar, 165k Fines & Arena Presets |
-| **🏑 Floorball Stats** | [`traali/floorball-stats`](https://github.com/traali/floorball-stats) | [`https://floorball-stats.pages.dev`](https://floorball-stats.pages.dev) | SSBL Salibandy Torneopal Center, YV%/AV% & 3-Period Timeline |
+| **🥍 Floorball Stats** | [`traali/floorball-stats`](https://github.com/traali/floorball-stats) | [`https://floorball-stats.pages.dev`](https://floorball-stats.pages.dev) | SSBL Salibandy Torneopal Center, YV%/AV% & 3-Period Timeline |
 | **🏀 Basketball Stats** | [`traali/basketball-stats`](https://github.com/traali/basketball-stats) | [`https://basketball-stats-byu.pages.dev`](https://basketball-stats-byu.pages.dev) | Koripalloliitto / Basket.fi Hub, 4 Quarters & Team Fouls |
 | **⚽ Football Stats** | [`traali/football-stats`](https://github.com/traali/football-stats) | [`https://football-stats-agk.pages.dev`](https://football-stats-agk.pages.dev) | Palloliitto Football Center, Head-to-Head & Form Radar |
 | **🏐 Volleyball Stats** | [`traali/volleyball-stats`](https://github.com/traali/volleyball-stats) | [`https://volleyball-stats-7xq.pages.dev`](https://volleyball-stats-7xq.pages.dev) | Torneopal Lentopallo, 25-Point Set Momentum Tracker |
+| **🌦️ Weather Stats** | [`traali/weather-stats`](https://github.com/traali/weather-stats) | Sovereign microservice | FMI WFS forecasts, 30/30 lightning rule, turf slickness |
+
+The kattorepo itself is [`traali/sports-federation`](https://github.com/traali/sports-federation): Canons (`contracts/index.ts`), `GLOBAL_ROLL.md`, and the Supreme Golden Test driver.
 
 ---
 
@@ -46,7 +49,7 @@ The golden test executes the full real-world Saturday simulation:
 git clone https://github.com/traali/sports-federation.git
 cd sports-federation
 
-# Verify canonical interface contracts across all 6 repos
+# Verify canonical interface contracts across all 7 repos
 npm run test:contracts
 
 # Execute the Supreme Golden End-User Test Suite
