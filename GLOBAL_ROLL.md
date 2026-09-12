@@ -78,6 +78,13 @@ Append-only chronicle of cross-repository architectural decisions, contract vers
 - **Verdict:** PASS WITH FINDINGS
 - **Summary:** Independent remotes are the architecture. Lefthook no longer calls `../scripts/git-guard.mjs`; each house vendors `scripts/git-guard.mjs`. Pelipäivä CD now deploys the Pages **production** alias (Worker token remains a house fault). Production SHA lag and the missing weather Pages project are filed as `house` issues in the owning remotes. Ledger: `docs/GAPS.md`. Division canon: https://github.com/traali/monastic-governance/blob/main/docs/ISSUE_DIVISION.md. Parent: https://github.com/traali/sports-federation/issues/1.
 
+## 2026-09-12 — Chapter of Faults remeasure: CD per house, weather sport, sibling runner
+- **Office / Author:** Abbas Primas, Legate, Cellarer (per house)
+- **Scope:** all 7 monasteries + kattorepo
+- **Contract Impact:** Minor (SupportedSport union widened with `weather`; association may be `fmi`)
+- **Verdict:** PASS WITH FINDINGS
+- **Summary:** GitHub HEAD is current on every remote. Cloudflare prod still serves 2–10 day old SHAs because the pelipaiva `CLOUDFLARE_API_TOKEN` is rejected for **Pages and Workers** (API 10000). Each satellite now has `.github/workflows/cd.yml` that skips when the house secret is unset. ParkkiS `<title>` is ParkkiS on HEAD (prod still `web`). Federation runner resolves sibling or nested checkouts and SKIPs missing houses. Ledger: `docs/GAPS.md`. Unblock: recreate token with Pages:Edit + Workers Scripts:Edit, paste onto every house, create Pages project `weather-stats`, then workflow_dispatch CD.
+
 ---
 
 ## Format for New Cross-Repo Entries:
