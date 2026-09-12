@@ -98,3 +98,6 @@ Append-only chronicle of cross-repository architectural decisions, contract vers
 
 ## 2026-09-12 — Discovery canon for stats houses
 - Floorball Vite SPA now has working SSBL search (commit ba637c0). Basketball and volleyball copy docs/DISCOVERY.md. Grok preview is not the monastery.
+
+## 2026-09-12 — Torneopal cache unpoison
+taso-proxy now serves all four TASO sports. Origin CF 403 cache is bypassed. Clients retry with `_cb`. Cellarer deploys worker. See docs/TASO_PROXY.md.
