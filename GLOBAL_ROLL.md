@@ -64,6 +64,13 @@ Append-only chronicle of cross-repository architectural decisions, contract vers
   2. Built and codified the **Supreme Golden End-User Test Suite** (`scripts/supreme-golden-test.mjs`) simulating real Saturday matchday journeys with diagnostic triage for Code vs. Test changes.
   3. Updated `pelipaiva` with live Basket.fi keys and 5-satellite slide-over drawer navigation.
 
+## 2026-09-12 — Weather Stats Rite Alignment & 7-Monastery Canon
+- **Office / Author:** Archon & Legate
+- **Scope:** `weather-stats`, `floorball-stats`, `basketball-stats`, `sports-federation`, `monastic-governance`
+- **Contract Impact:** Minor (canonical verifier now requires `WeatherForecastContract` already present in `contracts/index.ts` v1.0.0)
+- **Verdict:** PASS
+- **Summary:** Brought `weather-stats` up to the pelipaiva/football-stats monastic pack (`ROLL.md`, Chapter/Visitation/Rebuttal/Handoff rites, `monastic-visit.yml`). Replaced stub rites in `floorball-stats` and `basketball-stats`. Federation README and `run-federation-checks.mjs` now agree: 7 sovereign monasteries + this kattorepo.
+
 ---
 
 ## Format for New Cross-Repo Entries:
