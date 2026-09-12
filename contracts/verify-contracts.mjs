@@ -27,7 +27,8 @@ const requiredInterfaces = [
   'MatchdayContextContract',
   'ParkingRiskContract',
   'SportStatsContract',
-  'CrossRepoQueryContract'
+  'CrossRepoQueryContract',
+  'WeatherForecastContract'
 ];
 
 for (const iface of requiredInterfaces) {
