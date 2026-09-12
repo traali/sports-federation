@@ -5,7 +5,7 @@
   "type": "module",
   "main": "contracts/index.ts",
   "scripts": {
-    "test": "npm run test:monasteries && npm run test:contracts && npm run test:golden && npm run test:prod",
+    "test": "npm run test:monasteries && npm run test:contracts && npm run test:neighbors && npm run test:golden && npm run test:prod",
     "test:all": "npm test && npm run test:real-user",
     "test:monasteries": "node scripts/run-federation-checks.mjs",
     "test:contracts": "node contracts/verify-contracts.mjs",
@@ -15,7 +15,7 @@
     "test:real-user:cdp": "node scripts/real-user-golden-test.mjs --cdp",
     "test:manual-verifications": "node scripts/manual-verifications-playwright.mjs",
     "test:webmcp": "npx tsx scripts/test-all-webmcp.mjs",
-    "test:freshness": "node scripts/verify-build-versions.mjs",
+    "test:neighbors": "node scripts/check-neighbors.mjs --all",
     "hooks:install": "node scripts/install-all-hooks.mjs"
   },
   "keywords": [

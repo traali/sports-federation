@@ -12,6 +12,7 @@ The federation consists of 6 sovereign repositories (monasteries):
 - `volleyball-stats`: 25-point set score momentum tracking.
 
 ## Central Verification
-- `contracts/`: Canonical interface contracts (`SportStatsContract`, `ParkingRiskContract`, `MatchdayContextContract`).
+- `contracts/`: Canonical interface contracts + `neighbors.json` graph.
+- `scripts/check-neighbors.mjs`: Chapter of Neighbors — peer AGENTS.md, contract freeze, 5-point plans, live/TASO probes. Hooked from every house `npm run visit`.
 - `scripts/supreme-golden-test.mjs`: Neutral end-user Saturday matchday simulation testing across all 6 repositories.
 - `GLOBAL_ROLL.md`: Chronicle of General Chapter decisions and contract upgrades.

@@ -101,3 +101,5 @@ Append-only chronicle of cross-repository architectural decisions, contract vers
 
 ## 2026-09-12 — Torneopal cache unpoison
 taso-proxy now serves all four TASO sports. Origin CF 403 cache is bypassed. Clients retry with `_cb`. Cellarer deploys worker. See docs/TASO_PROXY.md.
+## 2026-09-12 — Chapter of Neighbors
+Each house visit now checks peer AGENTS.md, canonical contract fields, 5-point plans, live URLs, TASO. See docs/NEIGHBORS.md.
