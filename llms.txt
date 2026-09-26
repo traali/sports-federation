@@ -2,6 +2,8 @@
 
 > The central governance, canonical interface contracts, and end-user verification suite for the Finnish Youth Sports Federation ecosystem.
 
+No UI in this repo. Component catalogs live in each monastery. Index: `docs/UI_COMPONENTS.md`.
+
 ## Ecosystem Architecture
 The federation consists of 6 sovereign repositories (monasteries):
 - `pelipaiva`: Family matchday calendar, multi-sport schedule conflict engine, and WebMCP browser assistant tools.
