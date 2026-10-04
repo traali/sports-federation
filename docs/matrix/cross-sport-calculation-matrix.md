@@ -795,7 +795,7 @@ Coaches and parents rely on instant 1-tap WhatsApp briefing generation. Dynamic 
 • 68' 3-2 KäPa
 
 ━━━━━━━━━━━━━━━━━━━━
-🔗 https://football-stats.pages.dev/match/4106880
+🔗 https://football-stats-agk.pages.dev/#/match/4106880
 ```
 
 ##### Floorball Post-Match Briefing:
@@ -815,7 +815,7 @@ Coaches and parents rely on instant 1-tap WhatsApp briefing generation. Dynamic 
 • Indians: R. Tuulensuu (17 torjuntaa, T% 81.0%)
 • EräViikingit: V. Kosonen (21 torjuntaa, T% 80.8%)
 ━━━━━━━━━━━━━━━━━━━━
-🔗 https://floorball-stats.pages.dev/match/868865
+🔗 https://floorball-stats.pages.dev/#/match/868865
 ```
 
 ##### Basketball Post-Match Briefing:
@@ -831,7 +831,7 @@ Coaches and parents rely on instant 1-tap WhatsApp briefing generation. Dynamic 
 • G. Elliott (Honka): 24 pts (3x 3p, 6x 2p, 3x 1p)
 • A. Peltonen (Kobrat): 18 pts
 ━━━━━━━━━━━━━━━━━━━━
-🔗 https://basketball-stats.pages.dev/match/968705
+🔗 https://basketball-stats-byu.pages.dev/#/match/968705
 ```
 
 ##### Volleyball Post-Match Briefing:
@@ -844,7 +844,7 @@ Coaches and parents rely on instant 1-tap WhatsApp briefing generation. Dynamic 
 📈 *Eräsuhde:* 3–1 (Pisteet: 98–87)
 📍 *Pelipaikka:* Pielaveden liikuntahalli
 ━━━━━━━━━━━━━━━━━━━━
-🔗 https://volleyball-stats.pages.dev/match/738046
+🔗 https://volleyball-stats-7xq.pages.dev/#/match/738046
 ```
 
 ---
