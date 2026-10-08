@@ -2,28 +2,41 @@
 <html lang="fi">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="color-scheme" content="dark" />
+  <meta name="description" content="Linkit perheen urheilusovelluksiin." />
   <title>Urheilusovellukset</title>
   <style>
-    body { margin: 0; font-family: system-ui, sans-serif; background: #0b1220; color: #f4f7fb; }
-    main { max-width: 28rem; margin: 0 auto; padding: 1.5rem 1rem 3rem; }
+    :root { color-scheme: dark; }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background: #0b1220; color: #f4f7fb; -webkit-text-size-adjust: 100%; }
+    main { max-width: 28rem; margin: 0 auto; padding: max(1.25rem, env(safe-area-inset-top)) 1rem max(2.5rem, env(safe-area-inset-bottom)); }
     h1 { font-size: 1.4rem; margin: 0 0 .4rem; }
-    p { color: #9aa8bd; font-size: .95rem; }
-    a { display: flex; justify-content: space-between; gap: 1rem; align-items: center; min-height: 3.2rem; margin: .6rem 0; padding: .8rem 1rem; border-radius: 1rem; background: #162033; color: inherit; text-decoration: none; }
-    a span { color: #8ec8ff; font-size: .8rem; }
+    p { color: #9aa8bd; font-size: .95rem; line-height: 1.4; margin: 0 0 1rem; }
+    ul { list-style: none; margin: 0; padding: 0; }
+    a.app { display: flex; flex-direction: column; justify-content: center; gap: .15rem; min-height: 3.6rem; margin: .6rem 0; padding: .75rem 1rem; border-radius: 1rem; background: #162033; color: inherit; text-decoration: none; }
+    a.app:active, a.app:hover { background: #1d2a42; }
+    a.app:focus-visible { outline: 3px solid #8ec8ff; outline-offset: 2px; }
+    .name { font-size: 1.05rem; font-weight: 600; }
+    .what { color: #c6d2e3; font-size: .85rem; }
+    .host { color: #8ec8ff; font-size: .75rem; overflow-wrap: anywhere; }
+    footer { color: #7d8aa0; font-size: .8rem; margin-top: 1.5rem; line-height: 1.4; }
   </style>
 </head>
 <body>
   <main>
     <h1>Perheen urheilusovellukset</h1>
-    <p>Avaa se, jota tarvitset. Ottelut tulevat lajiliiton tulospalvelusta.</p>
-    <a href="https://pelipaiva.pages.dev/">Pelipäivä <span>päivät</span></a>
-    <a href="https://football-stats-agk.pages.dev/">Jalkapallo <span>tulokset</span></a>
-    <a href="https://floorball-stats.pages.dev/">Salibandy <span>tulokset</span></a>
-    <a href="https://basketball-stats-byu.pages.dev/">Koripallo <span>tulokset</span></a>
-    <a href="https://volleyball-stats-7xq.pages.dev/">Lentopallo <span>tulokset</span></a>
-    <a href="https://parkkis.pages.dev/">Parkki <span>kartta</span></a>
-    <a href="https://weather-stats.pages.dev/">Sää <span>kenttä</span></a>
+    <p>Valitse sovellus. Tämä sivu on pelkkä linkkilista: se ei laske eikä näytä tuloksia, pisteitä tai tilastoja. Ne näkyvät kunkin sovelluksen sisällä.</p>
+    <ul>
+      <li><a class="app" data-app="pelipaiva" href="https://pelipaiva.pages.dev/"><span class="name">Pelipäivä</span><span class="what">Perheen pelipäivät ja aikataulut</span><span class="host">pelipaiva.pages.dev</span></a></li>
+      <li><a class="app" data-app="football" href="https://football-stats-agk.pages.dev/"><span class="name">Jalkapallo</span><span class="what">Avaa jalkapallosovellus</span><span class="host">football-stats-agk.pages.dev</span></a></li>
+      <li><a class="app" data-app="floorball" href="https://floorball-stats.pages.dev/"><span class="name">Salibandy</span><span class="what">Avaa salibandysovellus</span><span class="host">floorball-stats.pages.dev</span></a></li>
+      <li><a class="app" data-app="basketball" href="https://basketball-stats-byu.pages.dev/"><span class="name">Koripallo</span><span class="what">Avaa koripallosovellus</span><span class="host">basketball-stats-byu.pages.dev</span></a></li>
+      <li><a class="app" data-app="volleyball" href="https://volleyball-stats-7xq.pages.dev/"><span class="name">Lentopallo</span><span class="what">Avaa lentopallosovellus</span><span class="host">volleyball-stats-7xq.pages.dev</span></a></li>
+      <li><a class="app" data-app="weather" href="https://weather-stats.pages.dev/"><span class="name">Sää</span><span class="what">Kentän sää ja salamat (Ilmatieteen laitos)</span><span class="host">weather-stats.pages.dev</span></a></li>
+      <li><a class="app" data-app="parkkis" href="https://parkkis.pages.dev/"><span class="name">Parkkis</span><span class="what">Pysäköinti pelipaikan lähellä</span><span class="host">parkkis.pages.dev</span></a></li>
+    </ul>
+    <footer>Kaikki tiedot tulevat sovelluksista itsestään.</footer>
   </main>
 </body>
 </html>

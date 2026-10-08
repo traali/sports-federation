@@ -1,0 +1,24 @@
+name: Hakemisto links
+
+on:
+  push:
+    branches: [main]
+    paths: [site/**, scripts/check-site.mjs, .github/workflows/site-check.yml]
+  pull_request:
+    branches: [main]
+    paths: [site/**, scripts/check-site.mjs, .github/workflows/site-check.yml]
+  workflow_dispatch:
+
+jobs:
+  site:
+    name: Hakemisto links and live apps
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Links, order, forbidden hosts, nothing computed
+        run: node scripts/check-site.mjs
+      - name: Every link serves the intended app
+        run: node scripts/check-site.mjs --live
