@@ -156,7 +156,12 @@ export async function runRealUserGoldenTestSuite() {
   if (!browser) {
     browser = await chromium.launch({
       headless: isHeadless,
-      channel: existsSync('C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe') ? 'chrome' : undefined,
+      // Use installed Google Chrome when present (Windows, macOS or Linux), else Playwright's Chromium.
+      channel: [
+        'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
+        '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+        '/opt/google/chrome/chrome',
+      ].some((p) => existsSync(p)) ? 'chrome' : undefined,
     });
   }
 
@@ -611,7 +616,10 @@ export async function runRealUserGoldenTestSuite() {
     try {
       await page.goto('https://pelipaiva.pages.dev', { waitUntil: 'domcontentloaded' });
 
-      // Seed 1 Calendar event (MyClub 12:15 gathering) and 1 official fixture (13:00 kickoff) for PPJ vs VJS
+      // Seed a coach's MyClub calendar entry (09:30 gathering) and the real official Palloliitto
+      // fixture it duplicates: TASO match 4208631, EsPa/Keltainen 3 – PPJ/Laru sin (team 185085),
+      // P13 Kolmonen, Su 4.10.2026 10:15–11:25 at Matinkylä 2 TN B, Espoo (checked 2026-10-08).
+      // TASO gives no venue coordinates, so none are seeded.
       await page.evaluate(async () => {
         await new Promise((resolve, reject) => {
           const req = indexedDB.open('PelipaivaDB');
@@ -626,46 +634,44 @@ export async function runRealUserGoldenTestSuite() {
             pStore.put({
               id: 'prof-johanna',
               playerName: 'Johanna',
-              teamName: 'PPJ Laru Sininen P12',
+              teamName: 'PPJ/Laru sin',
               sport: 'football',
             });
 
-            // Coach MyClub calendar event with gathering 12:15
+            // Coach MyClub calendar event with gathering 09:30
             eStore.put({
               id: 'cal-ppj-away-1',
               profileId: 'prof-johanna',
-              title: 'VJS - PPJ (Vierasottelu) - Valkoinen peliasu!',
-              startTime: '2026-09-12T09:15:00.000Z', // 12:15 Finnish local
-              endTime: '2026-09-12T11:00:00.000Z',
-              warmupTime: '2026-09-12T09:15:00.000Z',
+              title: 'EsPa - PPJ (Vierasottelu) - Valkoinen peliasu!',
+              startTime: '2026-10-04T06:30:00.000Z', // 09:30 Finnish local
+              endTime: '2026-10-04T08:25:00.000Z',
+              warmupTime: '2026-10-04T06:30:00.000Z',
               venue: {
-                name: 'Myyrmäen urheilupuisto TN 1',
-                normalizedName: 'myyrmäen urheilupuisto',
-                coordinates: { lat: 60.2618, lng: 24.8552 },
+                name: 'Matinkylä 2 TN B',
+                normalizedName: 'matinkylä 2 tn b',
               },
               sport: 'football',
-              homeTeam: 'VJS',
+              homeTeam: 'EsPa',
               awayTeam: 'PPJ',
               isHomeMatch: false,
             });
 
-            // Official Palloliitto fixture at 13:00 (45-min warmup offset)
+            // Official Palloliitto fixture at 10:15 (45-min warmup offset)
             eStore.put({
-              id: 'fixture-prof-johanna-spl-88219',
-              officialFixtureId: 'spl-88219',
+              id: 'fixture-prof-johanna-palloliitto_185085_4208631',
+              officialFixtureId: 'palloliitto_185085_4208631',
               profileId: 'prof-johanna',
-              title: 'VJS Punainen vs PPJ Laru Sininen',
-              startTime: '2026-09-12T10:00:00.000Z', // 13:00 Finnish local
-              endTime: '2026-09-12T11:15:00.000Z',
-              warmupTime: '2026-09-12T09:15:00.000Z',
+              title: 'EsPa/Keltainen 3 vs PPJ/Laru sin',
+              startTime: '2026-10-04T07:15:00.000Z', // 10:15 Finnish local
+              endTime: '2026-10-04T08:25:00.000Z', // 11:25
+              warmupTime: '2026-10-04T06:30:00.000Z',
               venue: {
-                name: 'Myyrmäen urheilupuisto TN 1',
-                normalizedName: 'myyrmäen urheilupuisto',
-                coordinates: { lat: 60.2618, lng: 24.8552 },
+                name: 'Matinkylä 2 TN B',
+                normalizedName: 'matinkylä 2 tn b',
               },
               sport: 'football',
-              homeTeam: 'VJS Punainen',
-              awayTeam: 'PPJ Laru Sininen',
+              homeTeam: 'EsPa/Keltainen 3',
+              awayTeam: 'PPJ/Laru sin',
               isHomeMatch: false,
             });
 
@@ -690,18 +696,18 @@ export async function runRealUserGoldenTestSuite() {
 
       const cardText = await matchdayCards.first().innerText();
 
-      // Assert kickoff is 13:00 (or gathering 12:15)
-      const hasTimes = cardText.includes('12.15') || cardText.includes('12:15') || cardText.includes('13.00') || cardText.includes('13:00');
+      // Assert kickoff is 10:15 (or gathering 09:30)
+      const hasTimes = ['9.30', '09.30', '9:30', '09:30', '10.15', '10:15'].some((t) => cardText.includes(t));
       if (!hasTimes) {
         throw new Error(`DOM-02 Failure: Reconciled card missing kickoff or gathering time: ${cardText}`);
       }
 
       // Assert intentional 45-min warmup offset does not produce spurious "Aikataulumuutos" warning
-      if (cardText.includes('Aikataulumuutos: 12:15 -> 13:00')) {
+      if (/Aikataulumuutos:\s*0?9[:.]30\s*->\s*10[:.]15/.test(cardText)) {
         throw new Error('Warmup offset defect: False-positive "Aikataulumuutos" alert produced for intentional warmup window');
       }
 
-      // Assert away match role inversion: Opponent is VJS, own team is PPJ
+      // Assert away match role inversion: Opponent is EsPa, own team is PPJ
       if (cardText.includes('Vastustaja ei täsmää')) {
         throw new Error('Opponent inversion defect: False-positive "Vastustaja ei täsmää" warning produced for away game');
       }
@@ -723,7 +729,7 @@ export async function runRealUserGoldenTestSuite() {
         'Away Match Calendar Reconciliation & Kit Disambiguation',
         'DOM-02 (toHaveCount(1) card deduplication), DOM-03 (Valkoinen peliasu), No spurious alerts',
         duration,
-        'Successfully reconciled 12:15 MyClub gathering with 13:00 official kickoff. Verified exactly 1 card rendered.'
+        'Reconciled the 09:30 MyClub gathering with real fixture 4208631 (10:15 kickoff). Verified exactly 1 card rendered.'
       );
     } catch (err) {
       recordFail('Journey 2', 'Away Match Reconciliation', 'DOM-02, DOM-03, kit normalizer', performance.now() - t0, err.message);
@@ -910,8 +916,9 @@ export async function runRealUserGoldenTestSuite() {
       await page.keyboard.press('Escape');
       await page.waitForTimeout(300);
 
-      // 4. Test Deep Link to ParkkiS with venue and theme parameters
-      const parkkisUrl = 'https://parkkis.pages.dev/venue/otahalli?lat=60.1841&lon=24.8315&embed=true&theme=night-captain';
+      // 4. Deep link to ParkkiS in pelipaiva's buildParkingDeepLink format (pelipaiva #43):
+      //    /venue/<encoded TASO venue name>?lat=&lon=
+      const parkkisUrl = 'https://parkkis.pages.dev/venue/Otahalli%20Espoo?lat=60.1841&lon=24.8315';
       const parkkisRes = await page.goto(parkkisUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
       if (!parkkisRes || parkkisRes.status() !== 200) {
         throw new Error(`ParkkiS deep link failed: HTTP ${parkkisRes ? parkkisRes.status() : 'NONE'}`);
@@ -936,6 +943,26 @@ export async function runRealUserGoldenTestSuite() {
     }
   }
 
+  // Real TASO matches, each checked on 2026-10-08 against that federation's TASO API.
+  // The page must show these exact teams; a made-up slug would never pass.
+  const REAL_MATCHES = {
+    football: { id: '4208631', url: 'https://football-stats-agk.pages.dev/#/match/4208631', home: 'EsPa/Keltainen 3', away: 'PPJ/Laru sin', score: [2, 3] },
+    floorball: { id: '929721', url: 'https://floorball-stats.pages.dev/match/929721', home: 'Indians', away: 'SPV', score: [4, 5] },
+    basketball: { id: '970996', url: 'https://basketball-stats-byu.pages.dev/#/match/970996', home: 'Honka', away: 'LePy', score: [59, 35] },
+    volleyball: { id: '803471', url: 'https://volleyball-stats-7xq.pages.dev/#/match/803471', home: 'Pfeifer Kuusamo', away: 'Puijo Wolley', score: [3, 1] },
+  };
+  async function assertRealTeams(page, sport) {
+    const m = REAL_MATCHES[sport];
+    await page.getByText(m.home, { exact: false }).first().waitFor({ timeout: 30000 });
+    const body = await page.evaluate(() => document.body.innerText);
+    for (const team of [m.home, m.away]) {
+      if (!body.includes(team)) {
+        throw new Error(`${sport} match ${m.id}: page does not show real team "${team}"`);
+      }
+    }
+    return body;
+  }
+
   // Journey 4: Cross-Sport Scoring & Standings Math (Live Monasteries DOM Extraction)
   if (shouldRun('Journey 4')) {
     const t0 = performance.now();
@@ -943,10 +970,31 @@ export async function runRealUserGoldenTestSuite() {
     console.log('👑 JOURNEY 4: Cross-Sport Scoring & Standings Math (4 Monasteries)');
     console.log('──────────────────────────────────────────────────────────────────────');
 
+    // Each sport is checked on its own, so one app's failure does not hide the others.
+    const sportDetails = [];
+    const sportFailures = [];
     try {
       // 4.1: Football Stats (Palloliitto SPL)
-      await page.goto('https://football-stats-agk.pages.dev/#/match/HJK-K%C3%A4Pa', { waitUntil: 'networkidle', timeout: 30000 });
-      await page.waitForSelector('table tbody tr', { timeout: 10000 });
+      await page.goto(REAL_MATCHES.football.url, { waitUntil: 'networkidle', timeout: 30000 });
+      const footBody = await assertRealTeams(page, 'football');
+
+      // Assert MATH-01: half-time vs final score on the real match page ("2 : 3", "Puoliaika 1–1")
+      const htMatch = footBody.match(/(?:HT:|Puoliaika)\s*(\d+)\s*[–-]\s*(\d+)/i);
+      const ftMatch = footBody.match(/(\d+)\s*:\s*(\d+)/);
+      if (!htMatch || !ftMatch) {
+        throw new Error(`MATH-01 Failure: football match ${REAL_MATCHES.football.id} shows no final or half-time score`);
+      }
+      const footScore = { hts_A: +htMatch[1], hts_B: +htMatch[2], fs_A: +ftMatch[1], fs_B: +ftMatch[2] };
+      if (footScore.fs_A !== REAL_MATCHES.football.score[0] || footScore.fs_B !== REAL_MATCHES.football.score[1]) {
+        throw new Error(`MATH-01 Failure: football final ${footScore.fs_A}:${footScore.fs_B}, TASO says ${REAL_MATCHES.football.score.join(':')}`);
+      }
+      if (footScore.fs_A < footScore.hts_A || footScore.fs_B < footScore.hts_B) {
+        throw new Error(`MATH-01 Football invariant failure: Final score less than half-time score (${footScore.fs_A}:${footScore.fs_B} < HT ${footScore.hts_A}:${footScore.hts_B})`);
+      }
+
+      // Standings live on the group page of that match (etejp26 / P133 / group 4).
+      await page.goto('https://football-stats-agk.pages.dev/#/group/etejp26/P133/4', { waitUntil: 'networkidle', timeout: 30000 });
+      await page.waitForSelector('table tbody tr', { timeout: 20000 });
 
       // Scrape actual standings table rows from the live DOM
       const footStandings = await page.evaluate(() => {
@@ -968,6 +1016,11 @@ export async function runRealUserGoldenTestSuite() {
       if (footStandings.length < 2) {
         throw new Error(`MATH-01/02 Failure: Expected at least 2 standings rows from football DOM, found ${footStandings.length}`);
       }
+      for (const team of [REAL_MATCHES.football.home, REAL_MATCHES.football.away]) {
+        if (!footStandings.some((t) => t.team === team)) {
+          throw new Error(`MATH-02 Failure: ${team} missing from its group table`);
+        }
+      }
 
       // Assert MATH-02: 3-1-0 standings formula directly on extracted DOM rows
       for (const t of footStandings) {
@@ -980,31 +1033,23 @@ export async function runRealUserGoldenTestSuite() {
         }
       }
 
-      // Assert MATH-01: Half-time vs final score invariant on match view
-      const footScore = await page.evaluate(() => {
-        const body = document.body.innerText;
-        const htMatch = body.match(/HT:\s*(\d+)[–-](\d+)/i);
-        const ftMatch = body.match(/(\d+)\s*:\s*(\d+)/);
-        return {
-          hasHT: Boolean(htMatch),
-          hts_A: htMatch ? parseInt(htMatch[1], 10) : 0,
-          hts_B: htMatch ? parseInt(htMatch[2], 10) : 0,
-          fs_A: ftMatch ? parseInt(ftMatch[1], 10) : 0,
-          fs_B: ftMatch ? parseInt(ftMatch[2], 10) : 0,
-        };
-      });
+      sportDetails.push(`Football ${REAL_MATCHES.football.id}: ${REAL_MATCHES.football.home} ${footScore.fs_A}:${footScore.fs_B} ${REAL_MATCHES.football.away} (HT ${footScore.hts_A}–${footScore.hts_B}), group table ${footStandings.length} rows 3-1-0 ✓`);
+    } catch (err) {
+      sportFailures.push(`Football: ${err.message}`);
+    }
 
-      if (footScore.hasHT && (footScore.fs_A < footScore.hts_A || footScore.fs_B < footScore.hts_B)) {
-        throw new Error(`MATH-01 Football invariant failure: Final score less than half-time score (${footScore.fs_A}:${footScore.fs_B} < HT ${footScore.hts_A}:${footScore.hts_B})`);
-      }
-
+    try {
       // 4.2: Floorball Stats (Salibandyliitto SSBL)
-      await page.goto('https://floorball-stats.pages.dev/match/Indians-Oilers', { waitUntil: 'networkidle', timeout: 30000 });
-      await page.waitForSelector('.tracking-widest', { timeout: 10000 });
+      await page.goto(REAL_MATCHES.floorball.url, { waitUntil: 'networkidle', timeout: 30000 });
+      await assertRealTeams(page, 'floorball');
 
       // Scrape actual scoreboard and period breakdown from the live DOM
       const floorballData = await page.evaluate(() => {
-        const scoreText = document.querySelector('.tracking-widest')?.textContent?.trim() || '';
+        // The scoreboard is the first element whose whole text is "<home>–<away>".
+        const scoreEl = Array.from(document.querySelectorAll('div, span')).find(
+          (el) => el.children.length === 0 && /^\d+\s*[–-]\s*\d+$/.test(el.textContent.trim())
+        );
+        const scoreText = scoreEl?.textContent?.trim() || '';
         const scoreMatch = scoreText.match(/(\d+)\s*[–-]\s*(\d+)/);
         const scoreHome = scoreMatch ? parseInt(scoreMatch[1], 10) : null;
         const scoreAway = scoreMatch ? parseInt(scoreMatch[2], 10) : null;
@@ -1013,7 +1058,7 @@ export async function runRealUserGoldenTestSuite() {
         const periodDivs = Array.from(document.querySelectorAll('.grid.grid-cols-3 > div'));
         const periods = [];
         for (const d of periodDivs) {
-          const match = d.innerText.match(/(\d+)\.\s*Erä\s*\n\s*(\d+)\s*[–-]\s*(\d+)/);
+          const match = d.innerText.match(/(\d+)\.\s*erä\s*\n\s*(\d+)\s*[–-]\s*(\d+)/i);
           if (match) {
             periods.push({
               period: parseInt(match[1], 10),
@@ -1049,18 +1094,22 @@ export async function runRealUserGoldenTestSuite() {
         throw new Error(`MATH-03 Failure: Failed to scrape floorball score or 3 periods from live DOM: ${JSON.stringify(floorballData)}`);
       }
 
+      if (floorballData.scoreHome !== REAL_MATCHES.floorball.score[0] || floorballData.scoreAway !== REAL_MATCHES.floorball.score[1]) {
+        throw new Error(`MATH-03 Failure: floorball shows ${floorballData.scoreHome}–${floorballData.scoreAway}, TASO says ${REAL_MATCHES.floorball.score.join('–')}`);
+      }
+
       // Assert MATH-03: Period sum strictly equals final score
       const sumHome = floorballData.periods.reduce((acc, p) => acc + p.home, 0);
       const sumAway = floorballData.periods.reduce((acc, p) => acc + p.away, 0);
       if (sumHome !== floorballData.scoreHome || sumAway !== floorballData.scoreAway) {
-        throw new Error(`MATH-03 Floorball period sum mismatch: periods (${sumHome}-${sumAway}) !== final score (${floorballData.scoreHome}-${floorballData.scoreAway})`);
+        // 929721 went to overtime (0–0) and a shootout (0–1) in TASO (p4s/p5s); the page must
+        // show those periods for its periods to add up to the final score.
+        throw new Error(`MATH-03 Floorball period sum mismatch: periods shown (${sumHome}-${sumAway}) !== final score (${floorballData.scoreHome}-${floorballData.scoreAway}); overtime/shootout periods not shown`);
       }
 
       // Assert MATH-04: Goalkeeper save percentage with 0-shot division guard
-      const zeroShotGuard = (saves, conceded) => (saves + conceded === 0 ? '100%' : `${Math.round((saves / (saves + conceded)) * 100)}%`);
-      if (zeroShotGuard(0, 0) !== '100%') {
-        throw new Error('MATH-04 Failure: 0-shot goalkeeper must return 100% (never NaN)');
-      }
+      // (A local "0 shots = 100%" check was removed: it tested no app code, and floorball #10
+      // decided an unplayed game is not a 100% save.)
       for (const g of floorballData.goalies) {
         const total = g.saves + g.conceded;
         const expected1 = total === 0 ? '100%' : `${((g.saves / total) * 100).toFixed(1)}%`;
@@ -1070,9 +1119,16 @@ export async function runRealUserGoldenTestSuite() {
         }
       }
 
+      sportDetails.push(`Floorball ${REAL_MATCHES.floorball.id}: periods ${sumHome}-${sumAway} == ${floorballData.scoreHome}-${floorballData.scoreAway}`);
+    } catch (err) {
+      sportFailures.push(`Floorball: ${err.message}`);
+    }
+
+    try {
       // 4.3: Basketball Stats (Basket.fi Koripallo)
-      await page.goto('https://basketball-stats-byu.pages.dev/match/Honka-LePy?matchId=970996', { waitUntil: 'domcontentloaded', timeout: 45000 });
-      await page.waitForSelector('.grid.grid-cols-5 span:has-text("Honka")', { timeout: 45000 });
+      await page.goto(REAL_MATCHES.basketball.url, { waitUntil: 'domcontentloaded', timeout: 45000 });
+      await assertRealTeams(page, 'basketball');
+      await page.waitForSelector('table tr', { timeout: 30000 });
 
       // Scrape actual 4-quarter breakdown, scoreboard final score, and team fouls from the live DOM
       const basketData = await page.evaluate(() => {
@@ -1093,8 +1149,9 @@ export async function runRealUserGoldenTestSuite() {
           }
         }
 
-        const rows = Array.from(document.querySelectorAll('.grid.grid-cols-5')).map((g) =>
-          Array.from(g.querySelectorAll('span')).map((s) => s.textContent.trim())
+        // Quarter table: header "Joukkue Q1..Q4", then one row per team.
+        const rows = Array.from(document.querySelectorAll('table tr')).map((tr) =>
+          Array.from(tr.querySelectorAll('th, td')).map((c) => c.textContent.trim())
         );
 
         // Team fouls
@@ -1110,8 +1167,15 @@ export async function runRealUserGoldenTestSuite() {
       }
 
       // Assert MATH-05: 4-Quarter summation equals scoreboard final score and zero draws invariant
-      const homeQ = basketData.rows[1].slice(1, 5).map((v) => parseInt(v, 10) || 0);
-      const awayQ = basketData.rows[2].slice(1, 5).map((v) => parseInt(v, 10) || 0);
+      // A blank quarter stays blank in the app; never count it as 0 here.
+      const homeQ = basketData.rows[1].slice(1, 5).map((v) => (/^\d+$/.test(v) ? parseInt(v, 10) : NaN));
+      const awayQ = basketData.rows[2].slice(1, 5).map((v) => (/^\d+$/.test(v) ? parseInt(v, 10) : NaN));
+      if ([...homeQ, ...awayQ].some(Number.isNaN)) {
+        throw new Error(`MATH-05 Failure: match ${REAL_MATCHES.basketball.id} has blank quarters, cannot sum: ${JSON.stringify(basketData.rows)}`);
+      }
+      if (basketData.finalScoreHome !== REAL_MATCHES.basketball.score[0] || basketData.finalScoreAway !== REAL_MATCHES.basketball.score[1]) {
+        throw new Error(`MATH-05 Failure: basketball shows ${basketData.finalScoreHome}–${basketData.finalScoreAway}, TASO says ${REAL_MATCHES.basketball.score.join('–')}`);
+      }
 
       if (homeQ.length !== 4 || awayQ.length !== 4) {
         throw new Error(`MATH-05 Failure: Expected exactly 4 quarters for basketball, found ${homeQ.length} and ${awayQ.length}`);
@@ -1145,98 +1209,56 @@ export async function runRealUserGoldenTestSuite() {
         }
       }
 
+      sportDetails.push(`Basketball ${REAL_MATCHES.basketball.id}: quarters ${totalHome}-${totalAway} == ${basketData.finalScoreHome}-${basketData.finalScoreAway}`);
+    } catch (err) {
+      sportFailures.push(`Basketball: ${err.message}`);
+    }
+
+    try {
       // 4.4: Volleyball Stats (Lentopalloliitto)
-      const volleyDistDir = resolve(ROOT, 'volleyball-stats/dist');
-      if (!existsSync(resolve(volleyDistDir, 'index.html'))) {
-        execSync('npm run build', { cwd: resolve(ROOT, 'volleyball-stats'), stdio: 'pipe' });
-      }
-      const volleyRouteHandler = async (route) => {
-        const url = new URL(route.request().url());
-        let filePath = resolve(volleyDistDir, url.pathname.replace(/^\//, ''));
-        if (url.pathname === '/' || url.pathname.startsWith('/match/')) {
-          filePath = resolve(volleyDistDir, 'index.html');
-        }
-        if (existsSync(filePath)) {
-          const ext = filePath.split('.').pop();
-          const contentType = ext === 'js' ? 'application/javascript' : ext === 'css' ? 'text/css' : 'text/html';
-          await route.fulfill({ status: 200, contentType, body: readFileSync(filePath) });
-        } else {
-          await route.continue();
-        }
-      };
-      await page.route('https://volleyball-stats-7xq.pages.dev/**', volleyRouteHandler);
+      // Checks the live app users get (previously a local build was swapped in via page.route).
+      await page.goto(REAL_MATCHES.volleyball.url, { waitUntil: 'networkidle', timeout: 30000 });
+      await assertRealTeams(page, 'volleyball');
 
-      await page.goto('https://volleyball-stats-7xq.pages.dev/match/KaLe-Vantaa', { waitUntil: 'networkidle', timeout: 30000 });
-      await page.waitForSelector('.grid', { timeout: 10000 });
-
-      // Scrape authentic set breakdown, hero scoreboard, and rules from the live DOM
+      // Scrape the set cards ("1. erä", then one row per team with its points) and the hero score.
       const volleyData = await page.evaluate(() => {
         const body = document.body.innerText;
-
-        // Hero scoreboard set score: e.g. "3 : 1" or "3 - 1"
-        const setScoreMatch = body.match(/(\d+)\s*:\s*(\d+)\s*\n*\s*Erävoitot/i) ||
-                              body.match(/Erävoittosuhde\s*\n*\s*(\d+)\s*[—–-]\s*(\d+)/i);
-        const homeSets = setScoreMatch ? parseInt(setScoreMatch[1], 10) : 3;
-        const awaySets = setScoreMatch ? parseInt(setScoreMatch[2], 10) : 1;
-
-        // Extract individual set cards from the sets grid
-        const cards = Array.from(document.querySelectorAll('.grid > div')).filter((d) =>
-          /(\d+)\.\s*Erä/i.test(d.textContent || '')
+        const heroEl = Array.from(document.querySelectorAll('p, div, span')).find(
+          (el) => el.children.length === 0 && /^\d\s*[–-]\s*\d$/.test(el.textContent.trim())
         );
-
+        const hero = heroEl ? heroEl.textContent.trim().match(/(\d)\s*[–-]\s*(\d)/) : null;
+        const cards = Array.from(document.querySelectorAll('.grid > div')).filter((d) =>
+          /^\s*\d+\.\s*erä/i.test(d.textContent || '')
+        );
         const sets = cards.map((c) => {
-          const numMatch = (c.textContent || '').match(/(\d+)\.\s*Erä/i);
-          const number = numMatch ? parseInt(numMatch[1], 10) : null;
-          const isTieBreak = /15p|Tie-break/i.test(c.textContent || '');
-          const rawText = c.textContent ? c.textContent.trim() : '';
-
-          const scoreDiv = c.querySelector('.text-lg.font-black, .font-mono');
-          if (scoreDiv) {
-            const spans = Array.from(scoreDiv.querySelectorAll('span'));
-            if (spans.length >= 3 && /^\d+$/.test(spans[0].textContent.trim()) && /^\d+$/.test(spans[2].textContent.trim())) {
-              const home = parseInt(spans[0].textContent.trim(), 10);
-              const away = parseInt(spans[2].textContent.trim(), 10);
-              return { number, home, away, isFinished: true, isTieBreak, rawText };
-            }
-          }
-
-          // Fallback using card innerText which separates elements with newlines
-          const text = c.innerText || '';
-          const scoreMatch = text.match(/(\d+)\s*[-–]\s*(\d+)/);
-          return {
-            number,
-            home: scoreMatch ? parseInt(scoreMatch[1], 10) : null,
-            away: scoreMatch ? parseInt(scoreMatch[2], 10) : null,
-            isFinished: Boolean(scoreMatch),
-            isTieBreak,
-            rawText,
-          };
-        }).filter((s) => s.number !== null);
-
-        // Rule subtitle in DOM: "25 pistettä (ero 2p) • 5. erä 15p"
-        const ruleHeaderMatch = body.match(/25\s*pistettä\s*\(ero\s*2p\)\s*•\s*5\.\s*erä\s*15p/i);
-        const ruleHeaderText = ruleHeaderMatch ? ruleHeaderMatch[0] : '';
-
-        // Standings points
-        const standingsMatch = body.match(/#\d+\s*\((?:(\d+)\s*pistettä|(\d+)p)\)/i);
-        const standingsPoints = standingsMatch ? parseInt(standingsMatch[1] || standingsMatch[2], 10) : 24;
-
-        return { homeSets, awaySets, sets, ruleHeaderText, standingsPoints };
+          const number = parseInt((c.textContent.match(/(\d+)\.\s*erä/i) || [])[1], 10);
+          const teamRows = Array.from(c.querySelectorAll('.font-mono')).filter((r) => r.querySelectorAll('span').length >= 2);
+          const pts = teamRows.map((r) => {
+            const spans = r.querySelectorAll('span');
+            const v = spans[spans.length - 1].textContent.trim();
+            return /^\d+$/.test(v) ? parseInt(v, 10) : null;
+          });
+          const home = pts[0] ?? null;
+          const away = pts[1] ?? null;
+          return { number, home, away, isFinished: home !== null && away !== null };
+        });
+        return {
+          homeSets: hero ? parseInt(hero[1], 10) : null,
+          awaySets: hero ? parseInt(hero[2], 10) : null,
+          sets,
+          fifthSetRule: /5\.\s*erä\s*15\s*p/i.test(body),
+        };
       });
 
-      await page.unroute('https://volleyball-stats-7xq.pages.dev/**', volleyRouteHandler);
-
-      // Assert MATH-07: 2-Point deuce margin rule for standard sets 1-4 on live DOM sets
+      // Assert MATH-07: sets 1-4 go to 25 with a 2-point margin (deuce goes on until +2)
       const finishedSets = volleyData.sets.filter((s) => s.isFinished && s.number <= 4);
       if (finishedSets.length !== 4) {
-        throw new Error(`MATH-07 Failure: Expected 4 finished sets from live DOM, found ${finishedSets.length}`);
+        throw new Error(`MATH-07 Failure: Expected 4 finished sets for ${REAL_MATCHES.volleyball.id}, found ${finishedSets.length}: ${JSON.stringify(volleyData.sets)}`);
       }
-
       for (const s of finishedSets) {
         const winnerScore = Math.max(s.home, s.away);
         const loserScore = Math.min(s.home, s.away);
         const margin = winnerScore - loserScore;
-
         if (winnerScore < 25) {
           throw new Error(`MATH-07 Failure: Set ${s.number} winning score ${winnerScore} < 25 (${s.home}-${s.away})`);
         }
@@ -1248,69 +1270,41 @@ export async function runRealUserGoldenTestSuite() {
         }
       }
 
-      // Assert MATH-08: Deciding 5th set target is strictly 15 points
-      const set5 = volleyData.sets.find((s) => s.number === 5);
-      if (!set5) {
-        throw new Error('MATH-08 Failure: 5th set card missing from live volleyball DOM');
+      // Assert MATH-08: the page states the 15-point fifth set, and a 3–1 match has no played fifth set
+      if (!volleyData.fifthSetRule) {
+        throw new Error('MATH-08 Failure: volleyball page does not state "5. erä 15p"');
       }
-      if (!set5.isTieBreak && !set5.rawText.includes('15p')) {
-        throw new Error(`MATH-08 Failure: 5th set card missing 15p target label in live DOM: "${set5.rawText}"`);
-      }
-      if (!volleyData.ruleHeaderText.includes('5. erä 15p') && !set5.rawText.includes('15p')) {
-        throw new Error(`MATH-08 Failure: Volleyball rule header missing "5. erä 15p", found: "${volleyData.ruleHeaderText}"`);
-      }
-      // Since match ended 3-1, 5th set must remain unplayed
-      if (set5.isFinished) {
-        throw new Error('MATH-08 Failure: 5th set was played despite match being decided in 4 sets');
+      if (volleyData.sets.some((s) => s.number === 5 && s.isFinished)) {
+        throw new Error('MATH-08 Failure: 5th set shown as played in a match decided in 4 sets');
       }
 
-      // Assert MATH-09: Asymmetric standings points rule calculated from live match sets
+      // Assert MATH-09: set winners add up to the scoreboard, and the scoreboard matches TASO
       const computedHomeSets = volleyData.sets.filter((s) => s.isFinished && s.home > s.away).length;
       const computedAwaySets = volleyData.sets.filter((s) => s.isFinished && s.away > s.home).length;
       if (computedHomeSets !== volleyData.homeSets || computedAwaySets !== volleyData.awaySets) {
         throw new Error(`MATH-09 Failure: Sum of set winners (${computedHomeSets}-${computedAwaySets}) does not match scoreboard (${volleyData.homeSets}-${volleyData.awaySets})`);
       }
-
-      // Torneopal / Lentopalloliitto point system:
-      // 3-0 or 3-1 win: Winner awards 3 pts, Loser awards 0 pts
-      // 3-2 win: Winner awards 2 pts, Loser awards 1 pt
-      const winnerSets = Math.max(computedHomeSets, computedAwaySets);
-      const loserSets = Math.min(computedHomeSets, computedAwaySets);
-      if (winnerSets !== 3) {
-        throw new Error(`MATH-09 Failure: Match is not decided (sets: ${winnerSets}-${loserSets})`);
+      if (volleyData.homeSets !== REAL_MATCHES.volleyball.score[0] || volleyData.awaySets !== REAL_MATCHES.volleyball.score[1]) {
+        throw new Error(`MATH-09 Failure: volleyball shows ${volleyData.homeSets}–${volleyData.awaySets}, TASO says ${REAL_MATCHES.volleyball.score.join('–')}`);
       }
 
-      const matchPointsWinner = loserSets <= 1 ? 3 : 2;
-      const matchPointsLoser = loserSets <= 1 ? 0 : 1;
+      sportDetails.push(`Volleyball ${REAL_MATCHES.volleyball.id}: sets ${volleyData.homeSets}-${volleyData.awaySets}, 4 sets deuce-checked`);
+    } catch (err) {
+      sportFailures.push(`Volleyball: ${err.message}`);
+    }
 
-      if (computedHomeSets === 3 && computedAwaySets === 1) {
-        if (matchPointsWinner !== 3 || matchPointsLoser !== 0) {
-          throw new Error(`MATH-09 Failure: 3-1 match must award 3 points to winner and 0 to loser, got (${matchPointsWinner}, ${matchPointsLoser})`);
-        }
-      } else if (computedHomeSets === 3 && computedAwaySets === 2) {
-        if (matchPointsWinner !== 2 || matchPointsLoser !== 1) {
-          throw new Error(`MATH-09 Failure: 3-2 match must award 2 points to winner and 1 to loser, got (${matchPointsWinner}, ${matchPointsLoser})`);
-        }
-      }
-
-      // Verify KaLe's standings points in DOM
-      if (!volleyData.standingsPoints || volleyData.standingsPoints <= 0) {
-        throw new Error(`MATH-09 Failure: Invalid standings points rendered in DOM: ${volleyData.standingsPoints}`);
-      }
-      if (volleyData.standingsPoints % matchPointsWinner !== 0 && volleyData.standingsPoints % 3 !== 0) {
-        throw new Error(`MATH-09 Failure: Standings points ${volleyData.standingsPoints} inconsistent with 3-point victory increments`);
-      }
-
-      const duration = performance.now() - t0;
+    const duration = performance.now() - t0;
+    if (sportFailures.length > 0) {
+      recordFail('Journey 4', 'Cross-Sport Scoring Math', 'MATH-01..09', duration,
+        [...sportFailures, ...sportDetails.map((d) => `OK ${d}`)].join(' | '));
+    } else {
       recordPass(
         'Journey 4',
         'Cross-Sport Scoring & Standings Math (Live Monasteries DOM Extraction)',
-        'MATH-01..09 (Football 3-1-0 & Halves, Floorball 3 periods & Goalie guard, Basket 4Q & 5-foul bonus, Volley deuce margin)',
+        'MATH-01..09 on real TASO matches (Football 3-1-0 & halves, Floorball periods, Basket quarters, Volley deuce margin)',
         duration,
-        `Scraped live data: Football standings (${footStandings.length} rows), Floorball periods (${sumHome}-${sumAway} == ${floorballData.scoreHome}-${floorballData.scoreAway}), Basket quarters (${totalHome}-${totalAway} == ${basketData.finalScoreHome}-${basketData.finalScoreAway}), Volley sets (${volleyData.homeSets}-${volleyData.awaySets}, 4 sets deuce-checked).`
+        sportDetails.join(' | ')
       );
-    } catch (err) {
-      recordFail('Journey 4', 'Cross-Sport Scoring Math', 'MATH-01..09', performance.now() - t0, err.message);
     }
   }
 

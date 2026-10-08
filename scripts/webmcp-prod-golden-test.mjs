@@ -65,14 +65,19 @@ async function step1() {
 // STEP 2: Live SPA Deep Routing & Match Resolvers
 // ─────────────────────────────────────────────────────────────────────────────
 async function step2() {
+  // Real TASO match ids, checked against each federation's TASO API on 2026-10-08:
+  //   salibandy 929721  Indians 4–5 SPV (F-liiga, Otahalli Espoo, 2026-10-03)
+  //   basket    970996  Honka 59–35 LePy (T14 II div, 2025-09-20)
+  //   lentopallo 803471 Pfeifer Kuusamo 3–1 Puijo Wolley (Naisten Mestaruusliiga, 2026-10-02)
+  //   palloliitto 4208631 EsPa/Keltainen 3 2–3 PPJ/Laru sin (P13 Kolmonen, 2026-10-04)
+  // Football is hash-routed only, as pelipaiva links it (#/match/<id>).
   const matchUrls = [
-    { sport: 'Floorball', url: 'https://floorball-stats.pages.dev/match/Indians-Oilers' },
-    { sport: 'Basketball', url: 'https://basketball-stats-byu.pages.dev/match/Honka-LePy' },
-    { sport: 'Volleyball', url: 'https://volleyball-stats-7xq.pages.dev/match/KaLe-Vantaa' },
-    { sport: 'Football', url: 'https://football-stats-agk.pages.dev/#/match/HJK-K%C3%A4Pa' },
-    { sport: 'Football Slug', url: 'https://football-stats-agk.pages.dev/#/match/PPJ%2FLaru%20sin-ATW%20United' },
-    { sport: 'ParkkiS Otahalli', url: 'https://parkkis.pages.dev/venue/Otahalli' },
-    { sport: 'ParkkiS Ruukinlahti', url: 'https://parkkis.pages.dev/venue/Ruukinlahden%20tekonurmi?lat=60.16197&lon=24.86975' },
+    { sport: 'Floorball', url: 'https://floorball-stats.pages.dev/match/929721' },
+    { sport: 'Basketball', url: 'https://basketball-stats-byu.pages.dev/match/970996' },
+    { sport: 'Volleyball', url: 'https://volleyball-stats-7xq.pages.dev/match/803471' },
+    { sport: 'Football', url: 'https://football-stats-agk.pages.dev/#/match/4208631' },
+    // pelipaiva #43 buildParkingDeepLink format: /venue/<encoded TASO venue name>?lat=&lon=
+    { sport: 'ParkkiS Otahalli', url: 'https://parkkis.pages.dev/venue/Otahalli%20Espoo?lat=60.1841&lon=24.8315' },
   ]
 
   const routeFailures = []
@@ -83,7 +88,7 @@ async function step2() {
   if (routeFailures.length > 0) throw new Error(routeFailures.join('\n   '))
 
   pass(2, 'Live SPA Deep Match Route Resolution in Production',
-    'Verified /match/Indians-Oilers, /match/Honka-LePy, /match/KaLe-Vantaa, #/match/PPJ-ATW, and /venue/Ruukinlahden%20tekonurmi return HTTP 200.')
+    'Real TASO match ids 929721 (salibandy), 970996 (basket), 803471 (lentopallo), 4208631 (palloliitto) and the ParkkiS venue link return HTTP 200.')
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
