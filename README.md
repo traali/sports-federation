@@ -22,7 +22,8 @@ Finnish youth sports families face weekend scheduling chaos with multiple childr
 | **🏀 Basketball Stats** | [`traali/basketball-stats`](https://github.com/traali/basketball-stats) | [`https://basketball-stats-byu.pages.dev`](https://basketball-stats-byu.pages.dev) | Koripalloliitto / Basket.fi Hub, 4 Quarters & Team Fouls |
 | **⚽ Football Stats** | [`traali/football-stats`](https://github.com/traali/football-stats) | [`https://football-stats-agk.pages.dev`](https://football-stats-agk.pages.dev) | Palloliitto Football Center, Head-to-Head & Form Radar |
 | **🏐 Volleyball Stats** | [`traali/volleyball-stats`](https://github.com/traali/volleyball-stats) | [`https://volleyball-stats-7xq.pages.dev`](https://volleyball-stats-7xq.pages.dev) | Torneopal Lentopallo, 25-Point Set Momentum Tracker |
-| **🌦️ Weather Stats** | [`traali/weather-stats`](https://github.com/traali/weather-stats) | Sovereign microservice | FMI WFS forecasts, 30/30 lightning rule, turf slickness |
+| **🌦️ Weather Stats** | [`traali/weather-stats`](https://github.com/traali/weather-stats) | [`https://weather-stats.pages.dev`](https://weather-stats.pages.dev) | FMI observations & forecasts, 30/30 lightning rule, turf slickness |
+| **📇 Hakemisto** | [`traali/sports-federation`](https://github.com/traali/sports-federation) (`site/`) | [`https://sports-federation.pages.dev`](https://sports-federation.pages.dev) | Phone link list to the apps above. Computes nothing. `npm run test:site:live` checks every link serves the intended app |
 
 The kattorepo itself is [`traali/sports-federation`](https://github.com/traali/sports-federation): Canons (`contracts/index.ts`), `GLOBAL_ROLL.md`, and the Supreme Golden Test driver.
 
