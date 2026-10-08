@@ -129,8 +129,9 @@ function getUpcomingSundayDateISO() {
 // Text that only an invented parking estimate would produce. Pelipäivä has no parking
 // data of its own (ParkkiS does), so none of this may ever reach a family's screen.
 const INVENTED_PARKING_TEXT = ['Helppo parkki', 'Ahdas parkki', 'Kohtalainen', 'Valvontariski', 'Vyöhyke 1', 'Pysäköintikiekko', '€4/h', 'Sakkoindeksi'];
-// A drive time is only known from the family's own home; guessed minutes look like these.
-const GUESSED_DRIVE_TEXT = /~\s*\d+\s*min|\d+\s*min\s*ajo|siirtymä\s*~|ajoaika\s*~?\s*\d/i;
+// Pelipäivä does not know the drive between venues (only from the family's own home), so
+// no drive or transfer talk may appear around a clash: any of these fails.
+const GUESSED_DRIVE_TEXT = /min\s*ajo|siirtymä|ajoaika|~\s*\d+\s*min/i;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Resilient Dual Playwright Loader
@@ -626,7 +627,18 @@ export async function runRealUserGoldenTestSuite() {
         const bodyText = await page.innerText('body');
         const shownParking = INVENTED_PARKING_TEXT.filter((t) => bodyText.includes(t));
         if (shownParking.length) throw new Error(`${phase}: stale parking estimate shown: ${shownParking.join(', ')}`);
-        return { alertText, bodyText };
+        const driveTalk = bodyText.match(GUESSED_DRIVE_TEXT);
+        if (driveTalk) throw new Error(`${phase}: drive/transfer guess "${driveTalk[0]}" shown on the page`);
+        // The game cards carry the clash too; same rule there.
+        await page.locator('button[role="tab"]:has-text("Kortit")').click();
+        await page.waitForTimeout(400);
+        const cardsText = await page.innerText('body');
+        const cardDriveTalk = cardsText.match(GUESSED_DRIVE_TEXT);
+        if (cardDriveTalk) throw new Error(`${phase}: drive/transfer guess "${cardDriveTalk[0]}" shown on the game cards`);
+        if (!twoDrivers.test(cardsText)) throw new Error(`${phase}: game cards have no two-driver advice`);
+        await page.locator('button[role="tab"]:has-text("Tiivis")').click(); // back to the default view
+        await page.waitForTimeout(300);
+        return { alertText, bodyText: `${bodyText}\n${cardsText}` };
       };
 
       // Phase A: no home set. The clash is stated, travel time is unknown, nothing is guessed.
@@ -927,7 +939,8 @@ export async function runRealUserGoldenTestSuite() {
   // The page must show these exact teams; a made-up slug would never pass.
   const REAL_MATCHES = {
     football: { id: '4208631', url: 'https://football-stats-agk.pages.dev/#/match/4208631', home: 'EsPa/Keltainen 3', away: 'PPJ/Laru sin', score: [2, 3] },
-    floorball: { id: '929721', url: 'https://floorball-stats.pages.dev/match/929721', home: 'Indians', away: 'SPV', score: [4, 5] },
+    // 929721 went to overtime (0–0) and a shootout (TASO p4s 0–0, p5s 0–1): 4–4 after regulation, 4–5 final.
+    floorball: { id: '929721', url: 'https://floorball-stats.pages.dev/match/929721', home: 'Indians', away: 'SPV', score: [4, 5], regulation: [4, 4], overtime: [0, 0], shootout: [0, 1], finalLabel: 'Lopputulos (RL-kilpailu)' },
     basketball: { id: '970996', url: 'https://basketball-stats-byu.pages.dev/#/match/970996', home: 'Honka', away: 'LePy', score: [59, 35] },
     volleyball: { id: '803471', url: 'https://volleyball-stats-7xq.pages.dev/#/match/803471', home: 'Pfeifer Kuusamo', away: 'Puijo Wolley', score: [3, 1] },
   };
@@ -1048,6 +1061,19 @@ export async function runRealUserGoldenTestSuite() {
           }
         }
 
+        // Result breakdown under the periods (floorball-stats 35ea771): regulation, overtime, shootout rows.
+        const breakdown = {};
+        for (const row of document.querySelectorAll('[data-testid="result-breakdown"] [data-row]')) {
+          const spans = row.querySelectorAll('span');
+          const m = (spans[1]?.textContent || '').trim().match(/^(\d+)\s*[–-]\s*(\d+)$/);
+          breakdown[row.getAttribute('data-row')] = {
+            label: (spans[0]?.textContent || '').trim(),
+            home: m ? parseInt(m[1], 10) : null,
+            away: m ? parseInt(m[2], 10) : null,
+          };
+        }
+        const finalLabel = document.querySelector('[data-testid="final-score-label"]')?.textContent?.trim() || null;
+
         // Scrape Goalkeepers stats
         const goalieDivs = Array.from(document.querySelectorAll('div')).filter(
           (d) => d.innerText && d.innerText.includes('Torjunnat') && d.innerText.includes('Päästetyt')
@@ -1067,7 +1093,7 @@ export async function runRealUserGoldenTestSuite() {
           }
         }
 
-        return { scoreHome, scoreAway, periods, goalies };
+        return { scoreHome, scoreAway, periods, breakdown, finalLabel, goalies };
       });
 
       if (floorballData.scoreHome === null || floorballData.periods.length < 3) {
@@ -1078,13 +1104,61 @@ export async function runRealUserGoldenTestSuite() {
         throw new Error(`MATH-03 Failure: floorball shows ${floorballData.scoreHome}–${floorballData.scoreAway}, TASO says ${REAL_MATCHES.floorball.score.join('–')}`);
       }
 
-      // Assert MATH-03: Period sum strictly equals final score
-      const sumHome = floorballData.periods.reduce((acc, p) => acc + p.home, 0);
-      const sumAway = floorballData.periods.reduce((acc, p) => acc + p.away, 0);
-      if (sumHome !== floorballData.scoreHome || sumAway !== floorballData.scoreAway) {
-        // 929721 went to overtime (0–0) and a shootout (0–1) in TASO (p4s/p5s); the page must
-        // show those periods for its periods to add up to the final score.
-        throw new Error(`MATH-03 Floorball period sum mismatch: periods shown (${sumHome}-${sumAway}) !== final score (${floorballData.scoreHome}-${floorballData.scoreAway}); overtime/shootout periods not shown`);
+      // Assert MATH-03: periods 1–3 add up to regulation time; regulation + overtime + shootout
+      // (the shootout winner gets exactly one goal) add up to the final score.
+      const fb = floorballData;
+      const exp = REAL_MATCHES.floorball;
+      const periodNumbers = fb.periods.map((p) => p.period).join(',');
+      if (periodNumbers !== '1,2,3') {
+        throw new Error(`MATH-03 Failure: expected periods 1,2,3, found ${periodNumbers}`);
+      }
+      const sumHome = fb.periods.reduce((acc, p) => acc + p.home, 0);
+      const sumAway = fb.periods.reduce((acc, p) => acc + p.away, 0);
+      const rowLabels = { regulation: 'Varsinainen peliaika', overtime: 'Jatkoaika', shootout: 'RL-kilpailu' };
+      for (const [key, label] of Object.entries(rowLabels)) {
+        const row = fb.breakdown[key];
+        if (row && (row.label !== label || row.home === null || row.away === null)) {
+          throw new Error(`MATH-03 Failure: ${key} row must read "${label} x–y", got ${JSON.stringify(row)}`);
+        }
+      }
+      const reg = fb.breakdown.regulation;
+      if (!reg) throw new Error('MATH-03 Failure: no "Varsinainen peliaika" row under the periods');
+      if (reg.home !== sumHome || reg.away !== sumAway) {
+        throw new Error(`MATH-03 Failure: periods add up to ${sumHome}–${sumAway}, "Varsinainen peliaika" says ${reg.home}–${reg.away}`);
+      }
+      let totalHome = reg.home;
+      let totalAway = reg.away;
+      const ot = fb.breakdown.overtime;
+      const so = fb.breakdown.shootout;
+      if ((ot || so) && reg.home !== reg.away) {
+        throw new Error(`MATH-03 Failure: overtime/shootout shown after a game decided in regulation (${reg.home}–${reg.away})`);
+      }
+      if (ot) {
+        totalHome += ot.home;
+        totalAway += ot.away;
+      }
+      if (so) {
+        if (totalHome !== totalAway) throw new Error(`MATH-03 Failure: shootout shown although overtime decided the game (${totalHome}–${totalAway})`);
+        if (so.home === so.away) throw new Error(`MATH-03 Failure: shootout row ${so.home}–${so.away} has no winner`);
+        if (so.home > so.away) totalHome += 1;
+        else totalAway += 1;
+      }
+      if (totalHome !== fb.scoreHome || totalAway !== fb.scoreAway) {
+        throw new Error(`MATH-03 Floorball sum mismatch: regulation ${reg.home}–${reg.away}${ot ? ` + overtime ${ot.home}–${ot.away}` : ''}${so ? ` + shootout winner (${so.home}–${so.away})` : ''} = ${totalHome}–${totalAway}, final shows ${fb.scoreHome}–${fb.scoreAway}`);
+      }
+      if (totalHome === totalAway) {
+        throw new Error(`MATH-03 Failure: final ${totalHome}–${totalAway} is level although the page lists no shootout`);
+      }
+      // The real 929721 rows and label, value for value (TASO p4s/p5s).
+      const got = (row) => (row ? [row.home, row.away].join('–') : 'missing');
+      const want = { regulation: exp.regulation, overtime: exp.overtime, shootout: exp.shootout };
+      for (const [key, value] of Object.entries(want)) {
+        if (got(fb.breakdown[key]) !== value.join('–')) {
+          throw new Error(`MATH-03 Failure: ${rowLabels[key]} ${got(fb.breakdown[key])}, TASO says ${value.join('–')}`);
+        }
+      }
+      if (fb.finalLabel !== exp.finalLabel) {
+        throw new Error(`MATH-03 Failure: final score label "${fb.finalLabel}", expected "${exp.finalLabel}"`);
       }
 
       // Assert MATH-04: Goalkeeper save percentage with 0-shot division guard
@@ -1099,7 +1173,7 @@ export async function runRealUserGoldenTestSuite() {
         }
       }
 
-      sportDetails.push(`Floorball ${REAL_MATCHES.floorball.id}: periods ${sumHome}-${sumAway} == ${floorballData.scoreHome}-${floorballData.scoreAway}`);
+      sportDetails.push(`Floorball ${REAL_MATCHES.floorball.id}: periods ${sumHome}-${sumAway} = regulation, + OT ${got(ot)} + shootout ${got(so)} = ${fb.scoreHome}-${fb.scoreAway} (${fb.finalLabel})`);
     } catch (err) {
       sportFailures.push(`Floorball: ${err.message}`);
     }

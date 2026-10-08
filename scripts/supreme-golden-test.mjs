@@ -210,8 +210,13 @@ async function runSupremeGoldenTest() {
     if (clash.severity !== 'critical') {
       throw new Error(`Expected critical severity (overlap > 40 min), got ${clash.severity}`)
     }
-    if (!(clash.travelMinutesEstimate > 0)) {
-      throw new Error(`Otahalli → Töölö needs a drive estimate, got ${clash.travelMinutesEstimate}`)
+    // Pelipäivä does not know the drive between venues (pelipaiva #45): no drive figure at all.
+    const driveTalk = /min\s*ajo|siirtymä|ajoaika|~\s*\d+\s*min/i
+    if ('travelMinutesEstimate' in clash || clash.gapMinutes !== 0) {
+      throw new Error(`Overlap conflict must carry no drive estimate and gapMinutes 0, got ${JSON.stringify({ travel: clash.travelMinutesEstimate, gap: clash.gapMinutes })}`)
+    }
+    if (driveTalk.test(`${clash.message} ${clash.suggestedFix}`)) {
+      throw new Error(`Overlap conflict text guesses a drive: ${clash.message} ${clash.suggestedFix}`)
     }
     if (!clash.suggestedFix.includes('Kaksi kuskia')) {
       throw new Error(`Advisory missing two-driver warning: ${clash.suggestedFix}`)
@@ -231,8 +236,27 @@ async function runSupremeGoldenTest() {
       throw new Error(`Same-child double booking must be 1 critical conflict with coach advice, got ${JSON.stringify(sameChild.map((c) => [c.severity, c.suggestedFix]))}`)
     }
 
+    // 4) Back-to-back at different venues: Tuomas ends 11:15 at Otahalli, Aino meets 11:30 at
+    //    Töölö → flagged with the real gap (end → meeting) and the venues, no drive guess.
+    const ainoLater = { ...aino, id: 'match-aino-3', warmupTime: '2026-09-05T11:30:00Z', startTime: '2026-09-05T12:00:00Z', endTime: '2026-09-05T13:15:00Z' }
+    const tight = conflictAgent([tuomas, ainoLater], profiles)
+    if (tight.length !== 1 || tight[0].overlapMinutes !== 0 || tight[0].gapMinutes !== 15) {
+      throw new Error(`Back-to-back at two venues must be 1 conflict with gap 15 min, got ${JSON.stringify(tight.map((c) => [c.overlapMinutes, c.gapMinutes]))}`)
+    }
+    for (const needle of ['väli 15 min', 'Otahalli Espoo', 'Töölön Pallokenttä']) {
+      if (!tight[0].message.includes(needle)) throw new Error(`Back-to-back message missing "${needle}": ${tight[0].message}`)
+    }
+    if (driveTalk.test(`${tight[0].message} ${tight[0].suggestedFix}`)) {
+      throw new Error(`Back-to-back text guesses a drive: ${tight[0].message} ${tight[0].suggestedFix}`)
+    }
+    // A 30 min gap or more is not flagged.
+    const ainoLater30 = { ...ainoLater, id: 'match-aino-4', warmupTime: '2026-09-05T11:45:00Z' }
+    if (conflictAgent([tuomas, ainoLater30], profiles).length !== 0) {
+      throw new Error('A 30 min gap between venues must not be flagged')
+    }
+
     pass(3, 'Multi-Sport Conflict Agent Execution (pelipaiva conflictAgent)',
-      `${clash.childA} vs ${clash.childB}: ${clash.overlapMinutes} min overlap, ~${clash.travelMinutesEstimate} min drive, ${clash.severity}. Fix: "${clash.suggestedFix}" Same venue: no conflict. Same child double-booked: critical.`)
+      `${clash.childA} vs ${clash.childB}: ${clash.overlapMinutes} min overlap, no drive guess, ${clash.severity}. Back-to-back: "${tight[0].message}". Fix: "${clash.suggestedFix}" Same venue: no conflict. Same child double-booked: critical.`)
   } catch (err) {
     fail(3, 'Multi-Sport Conflict Detection', err.message)
   }
