@@ -11,7 +11,8 @@ console.log('🌐 SUPREME WEBMCP & PRODUCTION GOLDEN TEST SUITE (Live Cloudflare
 console.log('═'.repeat(76) + '\n')
 
 let passedSteps = 0
-const totalSteps = 8
+const totalSteps = 5
+const failedSteps = []
 
 function pass(stepNum, title, details) {
   passedSteps++
@@ -22,7 +23,7 @@ function pass(stepNum, title, details) {
 function fail(stepNum, title, error) {
   console.error(`❌ [STEP ${stepNum}/${totalSteps}] FAIL: ${title}`)
   console.error(`   Error: ${error}\n`)
-  process.exit(1)
+  failedSteps.push(`STEP ${stepNum}: ${title}`)
 }
 
 async function fetchWithRetry(url, options = {}, retries = 2) {
@@ -74,10 +75,12 @@ async function step2() {
     { sport: 'ParkkiS Ruukinlahti', url: 'https://parkkis.pages.dev/venue/Ruukinlahden%20tekonurmi?lat=60.16197&lon=24.86975' },
   ]
 
+  const routeFailures = []
   for (const { sport, url } of matchUrls) {
     const res = await fetchWithRetry(url)
-    if (res.status !== 200) throw new Error(`Deep match route failed for ${sport}: HTTP ${res.status} on ${url}`)
+    if (res.status !== 200) routeFailures.push(`Deep match route failed for ${sport}: HTTP ${res.status} on ${url}`)
   }
+  if (routeFailures.length > 0) throw new Error(routeFailures.join('\n   '))
 
   pass(2, 'Live SPA Deep Match Route Resolution in Production',
     'Verified /match/Indians-Oilers, /match/Honka-LePy, /match/KaLe-Vantaa, #/match/PPJ-ATW, and /venue/Ruukinlahden%20tekonurmi return HTTP 200.')
@@ -90,7 +93,8 @@ async function step3() {
   const widgetEndpoints = [
     { name: 'Floorball MCP App', url: 'https://floorball-stats.pages.dev/mcp-floorball.html' },
     { name: 'Basketball MCP App', url: 'https://basketball-stats-byu.pages.dev/mcp-basket.html' },
-    { name: 'Football MCP App', url: 'https://football-stats-agk.pages.dev/mcp-h2h.html' },
+    { name: 'Volleyball MCP App', url: 'https://volleyball-stats-7xq.pages.dev/mcp-volley.html' },
+    // football-stats #16 (2026-10-08, "truth pass") removed mcp-h2h.html on purpose.
   ]
 
   for (const { name, url } of widgetEndpoints) {
@@ -103,7 +107,7 @@ async function step3() {
   }
 
   pass(3, 'Live MCP App UI Widgets (ext-apps standard)',
-    'Verified standalone widgets: mcp-floorball.html, mcp-basket.html, and mcp-h2h.html render correctly for iframe embeds.')
+    'Verified standalone widgets: mcp-floorball.html, mcp-basket.html and mcp-volley.html return HTML for iframe embeds.')
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -130,50 +134,9 @@ async function step4() {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// STEP 5: WebMCP In-Browser Tool Registry Simulation
+// STEP 5: Live Sports Federation API Pings
 // ─────────────────────────────────────────────────────────────────────────────
 async function step5() {
-  // Simulate standard W3C WebMCP document.modelContext execution
-  const mockTools = {
-    get_matchday_schedule: async (date) => ({
-      date: date || '2026-09-05',
-      events: [
-        { id: '1', sport: 'floorball', homeTeam: 'Indians', awayTeam: 'Oilers' },
-        { id: '2', sport: 'football', homeTeam: 'HJK', awayTeam: 'KäPa' },
-        { id: '3', sport: 'basketball', homeTeam: 'Honka', awayTeam: 'LePy' },
-      ],
-    }),
-    check_parking_risk: async (venue) => ({
-      venueName: venue,
-      riskIndex: 2,
-      discRule: '4h saapuessa',
-      nearestLot: 'Otahallin P-alue (120m)',
-    }),
-    get_family_profiles: async () => ({
-      profiles: [
-        { name: 'Tuomas', sport: 'floorball', club: 'Westend Indians' },
-        { name: 'Aino', sport: 'football', club: 'HJK' },
-        { name: 'Eero', sport: 'basketball', club: 'Tapiolan Honka' },
-      ],
-    }),
-  }
-
-  const sched = await mockTools.get_matchday_schedule('2026-09-05')
-  const park = await mockTools.check_parking_risk('Otahalli')
-  const prof = await mockTools.get_family_profiles()
-
-  if (sched.events.length !== 3 || park.riskIndex !== 2 || prof.profiles.length !== 3) {
-    throw new Error('WebMCP mock registry validation failed')
-  }
-
-  pass(5, 'WebMCP DOM Tool Registry Execution (`document.modelContext`)',
-    'Verified get_matchday_schedule, check_parking_risk, and get_family_profiles execute in < 1ms.')
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// STEP 6: Live Sports Federation API Pings
-// ─────────────────────────────────────────────────────────────────────────────
-async function step6() {
   const apis = [
     { name: 'SSBL Salibandy Torneopal', url: 'https://salibandy-api.torneopal.net/taso/rest/getMatches?competition_id=1&api_key=zsn3anknxzcfzc23k53jqdcd4pymutsf' },
     { name: 'SPL Palloliitto Torneopal', url: 'https://spl.torneopal.net/taso/rest/getMatches?competition_id=1&api_key=4h7dznqdxwtp3hsfdyf5r793uahfxy7x' },
@@ -192,66 +155,40 @@ async function step6() {
     }
   }
 
-  pass(6, 'Live Torneopal Federation API Gateways (SSBL, SPL, Basket.fi)',
+  pass(5, 'Live Torneopal Federation API Gateways (SSBL, SPL, Basket.fi)',
     'Verified public keys for Salibandy, Football, and Basketball (`df8e84j9xtdz269euy3h`).')
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// STEP 7: Real-Time Matchday Streamer Event Protocol
-// ─────────────────────────────────────────────────────────────────────────────
-async function step7() {
-  const sampleEvent = {
-    id: 'evt-prod-1',
-    matchId: '913481',
-    sport: 'floorball',
-    eventType: 'goal',
-    homeTeam: 'Indians',
-    awayTeam: 'Oilers',
-    newScore: { home: 15, away: 3 },
-    scorerName: 'Tuomas Hyrkkö',
-    period: '3',
-    minuteOrTime: '42:15',
-    timestamp: new Date().toISOString(),
-  }
-
-  if (sampleEvent.newScore.home !== 15 || sampleEvent.sport !== 'floorball') {
-    throw new Error('Event schema invariant broken')
-  }
-
-  pass(7, 'Real-Time Matchday Streamer & Goal Toast Event Schema',
-    'Verified cross-tab BroadcastChannel goal event dispatch and score accumulation.')
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// STEP 8: End-to-End Production Saturday Odyssey Certification
-// ─────────────────────────────────────────────────────────────────────────────
-async function step8() {
-  pass(8, 'End-to-End Production Saturday Multi-Sport Family Odyssey',
-    'Certified 100% operational across all 6 live Cloudflare deployments & WebMCP endpoints.')
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
 // EXECUTE ALL STEPS
 // ─────────────────────────────────────────────────────────────────────────────
 async function main() {
-  try {
-    await step1()
-    await step2()
-    await step3()
-    await step4()
-    await step5()
-    await step6()
-    await step7()
-    await step8()
+  // The mocked WebMCP registry, the constant goal-event check and the unconditional
+  // "certified" step were removed: they passed without touching any app. The real
+  // pelipaiva WebMCP registry is checked in supreme-golden-test.mjs step 9.
+  const steps = [
+    [1, 'Live Cloudflare Pages Root Endpoints', step1],
+    [2, 'Live SPA Deep Match Route Resolution', step2],
+    [3, 'Live MCP App UI Widgets', step3],
+    [4, 'Iframe Embed Permissions', step4],
+    [5, 'Live Torneopal Federation API Gateways', step5],
+  ]
+  for (const [n, title, run] of steps) {
+    try {
+      await run()
+    } catch (err) {
+      fail(n, title, err.message)
+    }
+  }
 
-    console.log('═'.repeat(76))
-    console.log(`✨ SUPREME WEBMCP & PROD TEST: 100% PASSED (${passedSteps}/${totalSteps} Steps)`)
-    console.log('📜 The 6-Monastery Cloudflare Production Ecosystem is fully certified!')
+  console.log('═'.repeat(76))
+  if (failedSteps.length > 0) {
+    console.error(`❌ WEBMCP & PROD TEST: ${passedSteps}/${totalSteps} steps passed. Failed:\n   ${failedSteps.join('\n   ')}`)
     console.log('═'.repeat(76) + '\n')
-  } catch (err) {
-    console.error('\n❌ GOLDEN TEST FAILED:', err.message)
     process.exit(1)
   }
+  console.log(`✨ SUPREME WEBMCP & PROD TEST: 100% PASSED (${passedSteps}/${totalSteps} Steps)`)
+  console.log('═'.repeat(76) + '\n')
 }
 
 main()

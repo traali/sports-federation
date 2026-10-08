@@ -34,8 +34,12 @@ jobs:
       - name: Verify Cross-Monastery Contracts
         run: node contracts/verify-contracts.mjs
 
+      # tsx: the gate imports the apps' real TypeScript modules (extensionless imports,
+      # type-only named imports), which plain `node` cannot load.
       - name: Execute Supreme Golden End-User Test Suite
-        run: node scripts/supreme-golden-test.mjs
+        run: npx --yes tsx@4 scripts/supreme-golden-test.mjs
 
+      # Run even when the step above fails, so one red step never hides the other suite.
       - name: Execute Live Production WebMCP Golden Test Suite
+        if: ${{ !cancelled() }}
         run: node scripts/webmcp-prod-golden-test.mjs
