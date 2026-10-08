@@ -8,11 +8,11 @@
  *
  * GATES & JOURNEYS:
  * - GATE 1: Production Deployment Freshness & Commit Parity Audit (All 6 Monasteries)
- * - GATE 2: Cloudflare Browser Run WebMCP Testing Standard (navigator.modelContextTesting)
+ * - GATE 2: WebMCP tool contract (document.modelContext.registerTool; tools executed as an agent would)
  * - GATE 3: The 5 Supreme Adversarial Real-User Journeys & Canonical Rubrics:
- *     - Journey 1: Multi-Sport Family Saturday Clash (Espoo vs Helsinki, ~28m transit, DOM-01, DOM-06)
- *     - Journey 2: Away Match Reconciliation & Deduplication (DOM-02 card count = 1, DOM-03 white kit)
- *     - Journey 3: Urban Spatial Parking Risk & Walking Navigation (DOM-04 safe disc, DOM-05 zone 1 trap, § 40 disc)
+ *     - Journey 1: Multi-Sport Family Saturday Clash (Espoo vs Helsinki, two-driver advice with/without home, no guessed drive minutes, DOM-01, DOM-06)
+ *     - Journey 2: Away Match Reconciliation & Deduplication (DOM-02 1 event/1 card, played + upcoming, DOM-03 away kit)
+ *     - Journey 3: Parking via ParkkiS link (DOM-04 one link per pinned venue, DOM-05 no invented parking text)
  *     - Journey 4: Cross-Sport Scoring & Standings Math (Live DOM scraping across 4 monasteries, MATH-01..09)
  *     - Journey 5: Post-Match WhatsApp Briefing (Authentic browser extraction, zero leaks, regex boundary, MATH-10)
  *     - Rubric DOM-07: Ask Copilot AI Drawer Accessibility & Focus
@@ -57,6 +57,80 @@ export function getUpcomingSaturdayDateISO() {
   const sat = new Date(now.getTime() + diff * 24 * 60 * 60 * 1000);
   return sat.toISOString().slice(0, 10);
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Pelipäivä seeding helpers (Dexie PelipaivaDB, same stores the app uses)
+// ─────────────────────────────────────────────────────────────────────────────
+const PELIPAIVA_HOME_KEY = 'pelipaiva_home_location';
+// Tapiola preset from Pelipäivä's own home picker (POPULAR_HOME_PRESETS).
+const TEST_HOME = {
+  name: 'Tapiola',
+  address: 'Tapiontori 3, 02100 Espoo',
+  coordinates: { lat: 60.1765, lng: 24.805 },
+  defaultTransitMode: 'car',
+};
+
+async function seedPelipaiva(page, { profiles, events, home = null }) {
+  // Wait until the app has created its database; opening it first would make an empty one.
+  await page.waitForFunction(
+    async () => (await indexedDB.databases()).some((d) => d.name === 'PelipaivaDB' && d.version > 1),
+    null,
+    { timeout: 15000 }
+  );
+  await page.evaluate(
+    async ({ profiles, events, home, homeKey }) => {
+      if (home) localStorage.setItem(homeKey, JSON.stringify(home));
+      else localStorage.removeItem(homeKey);
+      await new Promise((resolve, reject) => {
+        const req = indexedDB.open('PelipaivaDB');
+        req.onsuccess = () => {
+          const db = req.result;
+          const stores = ['profiles', 'events'].concat(db.objectStoreNames.contains('syncState') ? ['syncState'] : []);
+          const tx = db.transaction(stores, 'readwrite');
+          const pStore = tx.objectStore('profiles');
+          const eStore = tx.objectStore('events');
+          pStore.clear();
+          eStore.clear();
+          // The app reads the home from syncState first; never leave a stale one behind.
+          if (stores.includes('syncState')) tx.objectStore('syncState').delete('home_location');
+          for (const p of profiles) pStore.put(p);
+          for (const e of events) eStore.put(e);
+          tx.oncomplete = () => resolve();
+          tx.onerror = () => reject(tx.error);
+        };
+        req.onerror = () => reject(req.error);
+      });
+    },
+    { profiles, events, home, homeKey: PELIPAIVA_HOME_KEY }
+  );
+}
+
+async function readPelipaivaEvents(page) {
+  return page.evaluate(
+    () =>
+      new Promise((resolve, reject) => {
+        const req = indexedDB.open('PelipaivaDB');
+        req.onsuccess = () => {
+          const get = req.result.transaction('events').objectStore('events').getAll();
+          get.onsuccess = () => resolve(get.result);
+          get.onerror = () => reject(get.error);
+        };
+        req.onerror = () => reject(req.error);
+      })
+  );
+}
+
+/** Day after the upcoming Saturday (YYYY-MM-DD). */
+function getUpcomingSundayDateISO() {
+  const sat = new Date(`${getUpcomingSaturdayDateISO()}T12:00:00Z`);
+  return new Date(sat.getTime() + 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+}
+
+// Text that only an invented parking estimate would produce. Pelipäivä has no parking
+// data of its own (ParkkiS does), so none of this may ever reach a family's screen.
+const INVENTED_PARKING_TEXT = ['Helppo parkki', 'Ahdas parkki', 'Kohtalainen', 'Valvontariski', 'Vyöhyke 1', 'Pysäköintikiekko', '€4/h', 'Sakkoindeksi'];
+// A drive time is only known from the family's own home; guessed minutes look like these.
+const GUESSED_DRIVE_TEXT = /~\s*\d+\s*min|\d+\s*min\s*ajo|siirtymä\s*~|ajoaika\s*~?\s*\d/i;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Resilient Dual Playwright Loader
@@ -182,27 +256,29 @@ export async function runRealUserGoldenTestSuite() {
       // ignore
     }
 
-    // 2. Cloudflare Browser Run WebMCP standard testing interface
-    const mountTestingAlias = () => {
-      const registry =
-        (navigator && navigator.modelContext) ||
-        (document && document.modelContext) ||
-        (window && window.modelContext);
-      if (registry && !navigator.modelContextTesting) {
-        Object.defineProperty(navigator, 'modelContextTesting', {
-          value: {
-            listTools: () => registry.listTools(),
-            executeTool: (name, args) => registry.executeTool(name, args),
-            callTool: (params) => registry.callTool(params),
-          },
-          configurable: true,
-          enumerable: true,
-        });
-      }
+    // 2. WebMCP (Chrome's imperative API): apps call document.modelContext.registerTool(tool, { signal }).
+    //    Record every registered tool in window.__webmcpTools so the test can act as the agent and
+    //    call tool.execute(). A native modelContext is wrapped, never replaced.
+    const webmcpTools = new Map();
+    Object.defineProperty(window, '__webmcpTools', { value: webmcpTools, configurable: true });
+    const recordTool = (tool, options) => {
+      if (!tool || typeof tool.name !== 'string') return;
+      webmcpTools.set(tool.name, tool);
+      options?.signal?.addEventListener?.('abort', () => webmcpTools.delete(tool.name));
     };
-    mountTestingAlias();
-    window.addEventListener('DOMContentLoaded', mountTestingAlias);
-    window.addEventListener('webmcp:ready', mountTestingAlias);
+    const nativeContext = document.modelContext;
+    if (nativeContext && typeof nativeContext.registerTool === 'function') {
+      const nativeRegister = nativeContext.registerTool.bind(nativeContext);
+      nativeContext.registerTool = (tool, options) => {
+        recordTool(tool, options);
+        return nativeRegister(tool, options);
+      };
+    } else {
+      Object.defineProperty(document, 'modelContext', {
+        value: { registerTool: recordTool },
+        configurable: true,
+      });
+    }
 
     // 3. DOM TestID observer to tag user-facing elements
     const tagElements = () => {
@@ -236,16 +312,6 @@ export async function runRealUserGoldenTestSuite() {
         if (b.textContent && (b.textContent.includes('Valkoinen peliasu') || b.textContent.includes('Vieraspaita') || b.textContent.includes('varapaita'))) {
           if (!b.getAttribute('data-testid') && b.children.length === 0) {
             b.setAttribute('data-testid', 'away-jersey-badge');
-          }
-        }
-      }
-
-      // Parking ease badge: Tag button elements
-      const buttons = document.querySelectorAll('button');
-      for (const btn of buttons) {
-        if (btn.textContent && (btn.textContent.includes('Helppo parkki') || btn.textContent.includes('Ahdas parkki') || btn.textContent.includes('Kohtalainen'))) {
-          if (!btn.getAttribute('data-testid')) {
-            btn.setAttribute('data-testid', 'parking-ease-badge');
           }
         }
       }
@@ -363,88 +429,128 @@ export async function runRealUserGoldenTestSuite() {
   if (shouldRun('Gate 2')) {
     const t0 = performance.now();
     console.log('──────────────────────────────────────────────────────────────────────');
-    console.log('👑 GATE 2: Cloudflare Browser Run WebMCP Testing Standard');
+    console.log('👑 GATE 2: WebMCP Tool Contract (document.modelContext.registerTool)');
     console.log('──────────────────────────────────────────────────────────────────────');
 
     try {
-      await page.goto('https://pelipaiva.pages.dev', { waitUntil: 'networkidle', timeout: 30000 });
+      // Pelipäivä registers read-only tools over what is stored on the device. Seed the real
+      // Palloliitto fixture 4208631 (EsPa/Keltainen 3 – PPJ/Laru sin, Su 4.10.2026 10:15) so the
+      // schedule tool has one known game to return.
+      await page.goto('https://pelipaiva.pages.dev', { waitUntil: 'domcontentloaded', timeout: 30000 });
+      await seedPelipaiva(page, {
+        profiles: [{ id: 'prof-johanna', playerName: 'Johanna', teamName: 'PPJ/Laru sin', sport: 'football' }],
+        events: [
+          {
+            id: 'fixture-prof-johanna-palloliitto_185085_4208631',
+            officialFixtureId: 'palloliitto_185085_4208631',
+            profileId: 'prof-johanna',
+            title: 'EsPa/Keltainen 3 vs PPJ/Laru sin',
+            startTime: '2026-10-04T07:15:00.000Z',
+            endTime: '2026-10-04T08:25:00.000Z',
+            warmupTime: '2026-10-04T06:30:00.000Z',
+            venue: { name: 'Matinkylä 2 TN B', normalizedName: 'matinkylä 2 tn b' },
+            sport: 'football',
+            homeTeam: 'EsPa/Keltainen 3',
+            awayTeam: 'PPJ/Laru sin',
+            isHomeMatch: false,
+          },
+        ],
+      });
+      await page.reload({ waitUntil: 'networkidle', timeout: 30000 });
+      await page.waitForFunction(() => window.__webmcpTools && window.__webmcpTools.size >= 2, null, { timeout: 10000 });
 
-      // 1. Discover tools via navigator.modelContextTesting.listTools()
-      const toolDiscovery = await page.evaluate(async () => {
-        if (!navigator.modelContextTesting) return null;
-        return await navigator.modelContextTesting.listTools();
+      const pp = await page.evaluate(async () => {
+        const tools = window.__webmcpTools;
+        const call = async (name, input) => {
+          const res = await tools.get(name).execute(input);
+          const text = res?.content?.[0]?.text ?? '';
+          let json = null;
+          try { json = JSON.parse(text); } catch { /* not JSON */ }
+          return { isError: Boolean(res?.isError), text, json };
+        };
+        return {
+          tools: [...tools.values()].map((t) => ({
+            name: t.name,
+            readOnly: t.annotations?.readOnlyHint === true,
+            hasSchema: t.inputSchema?.type === 'object',
+            hasExecute: typeof t.execute === 'function',
+          })),
+          day: await call('get_matchday_schedule', { date: '2026-10-04' }),
+          emptyDay: await call('get_matchday_schedule', { date: '2026-10-05' }),
+          badDate: await call('get_matchday_schedule', { date: '4.10.2026' }),
+          profiles: await call('get_family_profiles', {}),
+        };
       });
 
-      if (!toolDiscovery || !Array.isArray(toolDiscovery.tools)) {
-        throw new Error('navigator.modelContextTesting.listTools() failed to return tools collection');
+      const toolNames = pp.tools.map((t) => t.name);
+      for (const required of ['get_matchday_schedule', 'get_family_profiles']) {
+        const tool = pp.tools.find((t) => t.name === required);
+        if (!tool) throw new Error(`Pelipäivä WebMCP tool ${required} not registered (got: ${toolNames.join(', ')})`);
+        if (!tool.readOnly || !tool.hasSchema || !tool.hasExecute) {
+          throw new Error(`Pelipäivä WebMCP tool ${required} must be read-only with an object inputSchema and execute()`);
+        }
+      }
+      // Parking belongs to ParkkiS; Pelipäivä must not offer a parking estimate to agents either.
+      if (toolNames.some((n) => /parking/i.test(n))) {
+        throw new Error(`Pelipäivä exposes a parking tool it has no data for: ${toolNames.join(', ')}`);
       }
 
-      const toolNames = toolDiscovery.tools.map((t) => t.name);
-      if (!toolNames.includes('check_parking_risk') || !toolNames.includes('get_matchday_schedule')) {
-        throw new Error(`WebMCP tools missing required endpoints: ${toolNames.join(', ')}`);
+      const day = pp.day.json;
+      if (pp.day.isError || !day || day.count !== 1 || day.events?.length !== 1) {
+        throw new Error(`get_matchday_schedule(2026-10-04) expected exactly the seeded game, got: ${pp.day.text.slice(0, 300)}`);
+      }
+      const game = day.events[0];
+      const expectGame = {
+        homeTeam: 'EsPa/Keltainen 3',
+        awayTeam: 'PPJ/Laru sin',
+        startTime: '2026-10-04T07:15:00.000Z',
+        playerName: 'Johanna',
+        statsAppUrl: 'https://football-stats-agk.pages.dev/#/match/4208631',
+        federationMatchUrl: 'https://tulospalvelu.palloliitto.fi/match/4208631',
+      };
+      for (const [k, v] of Object.entries(expectGame)) {
+        if (game[k] !== v) throw new Error(`get_matchday_schedule game.${k}: expected ${v}, got ${game[k]}`);
+      }
+      if (pp.emptyDay.isError || pp.emptyDay.json?.count !== 0) {
+        throw new Error(`get_matchday_schedule(2026-10-05) must return 0 events (nothing invented), got: ${pp.emptyDay.text.slice(0, 200)}`);
+      }
+      if (!pp.badDate.isError) {
+        throw new Error('get_matchday_schedule must reject a non-ISO date with isError');
+      }
+      if (pp.profiles.isError || !pp.profiles.text.includes('Johanna') || !pp.profiles.text.includes('PPJ/Laru sin')) {
+        throw new Error(`get_family_profiles missing seeded profile: ${pp.profiles.text.slice(0, 200)}`);
       }
 
-      // 2. Execute check_parking_risk via navigator.modelContextTesting.executeTool() for Otahalli (Safe)
-      const otahalliRisk = await page.evaluate(async () => {
-        return await navigator.modelContextTesting.executeTool('check_parking_risk', {
-          venueSlug: 'otahalli',
-          venueName: 'Otahalli Espoo',
-          coordinates: { lat: 60.1841, lng: 24.8315 },
-        });
+      // Football Stats registers its own tools the same way; read the real match 4208631.
+      await page.goto('https://football-stats-agk.pages.dev', { waitUntil: 'networkidle', timeout: 30000 });
+      await page.waitForFunction(() => window.__webmcpTools && window.__webmcpTools.has('get_football_match'), null, { timeout: 10000 });
+      const foot = await page.evaluate(async () => {
+        const tools = window.__webmcpTools;
+        const res = await tools.get('get_football_match').execute({ matchId: '4208631' });
+        return {
+          names: [...tools.keys()],
+          readOnly: tools.get('get_football_match').annotations?.readOnlyHint === true,
+          isError: Boolean(res?.isError),
+          text: res?.content?.[0]?.text ?? '',
+        };
       });
-
-      if (!otahalliRisk || otahalliRisk.venueSlug !== 'otahalli') {
-        throw new Error(`Invalid executeTool return payload for Otahalli: ${JSON.stringify(otahalliRisk)}`);
+      if (!foot.readOnly) throw new Error('Football get_football_match must be read-only');
+      const footNeedles = ['match_id 4208631', 'EsPa/Keltainen 3', 'PPJ/Laru sin', '2–3', 'https://football-stats-agk.pages.dev/#/match/4208631'];
+      const missing = footNeedles.filter((n) => !foot.text.includes(n));
+      if (foot.isError || missing.length) {
+        throw new Error(`Football get_football_match(4208631) missing ${missing.join(', ')}: ${foot.text.slice(0, 300)}`);
       }
-
-      if (otahalliRisk.safetyCategory !== 'safe' || otahalliRisk.riskRating > 5) {
-        throw new Error(`Otahalli parking risk expected safe (<5), got: ${otahalliRisk.riskRating}`);
-      }
-
-      // 3. Execute check_parking_risk for Central Core / Töölön Kisahalli (Trap)
-      const centralCoreRisk = await page.evaluate(async () => {
-        return await navigator.modelContextTesting.executeTool('check_parking_risk', {
-          venueSlug: 'kisahalli',
-          venueName: 'Töölön kisahalli',
-          coordinates: { lat: 60.1835, lng: 24.94 },
-        });
-      });
-
-      if (!centralCoreRisk || centralCoreRisk.safetyCategory !== 'trap' || centralCoreRisk.riskRating < 7) {
-        throw new Error(`Central core parking risk expected trap (>=7), got: ${centralCoreRisk?.riskRating}`);
-      }
-
-      // 4. Football WebMCP Tool Discovery & Execution (H2H card + UI widget)
-      await page.goto('https://football-stats-agk.pages.dev', { waitUntil: 'domcontentloaded', timeout: 30000 });
-      await page.waitForTimeout(800);
-
-      const footMcp = await page.evaluate(async () => {
-        if (!navigator.modelContextTesting) return null;
-        const list = await navigator.modelContextTesting.listTools();
-        const res = await navigator.modelContextTesting.executeTool('get_h2h_card', {
-          homeTeam: 'HJK',
-          awayTeam: 'KäPa',
-          leagueName: 'P13 Liiga',
-        });
-        return { list, res };
-      });
-
-      if (!footMcp || !footMcp.list || !footMcp.list.tools.some((t) => t.name === 'get_h2h_card')) {
-        throw new Error('Football WebMCP missing get_h2h_card tool in live browser');
-      }
-
-      const footToolNames = footMcp.list.tools.map((t) => t.name);
 
       const duration = performance.now() - t0;
       recordPass(
         'Gate 2',
-        'Cloudflare Browser Run WebMCP Discovery & Execution (Pelipäivä + Football)',
-        'listTools() + executeTool(check_parking_risk, get_h2h_card)',
+        'WebMCP Tool Contract (Pelipäivä + Football)',
+        'registerTool capture + execute(get_matchday_schedule, get_family_profiles, get_football_match)',
         duration,
-        `Discovered Pelipäivä [${toolNames.join(', ')}] & Football [${footToolNames.join(', ')}]. Widget: ${footMcp.res?._meta?.ui?.resourceUri || 'OK'}.`
+        `Pelipäivä [${toolNames.join(', ')}] returned the seeded fixture 4208631 with its stats links; Football [${foot.names.join(', ')}] returned EsPa/Keltainen 3 2–3 PPJ/Laru sin.`
       );
     } catch (err) {
-      recordFail('Gate 2', 'Cloudflare Browser Run WebMCP Testing Standard', 'WebMCP tool contract execution', performance.now() - t0, err.message);
+      recordFail('Gate 2', 'WebMCP Tool Contract', 'WebMCP tool contract execution', performance.now() - t0, err.message);
     }
   }
 
@@ -462,124 +568,95 @@ export async function runRealUserGoldenTestSuite() {
     try {
       await page.goto('https://pelipaiva.pages.dev', { waitUntil: 'domcontentloaded' });
 
-      // Seed Dexie PelipaivaDB with Tuomas & Aino fixtures on upcoming Saturday
+      // Tuomas (Otahalli, Espoo) and Aino (Töölö, Helsinki) play at the same time on the
+      // upcoming Saturday. Old builds stored invented parking blobs on events; they are seeded
+      // too, and must never be shown.
       const upcomingSat = getUpcomingSaturdayDateISO();
-      await page.evaluate(async (satDate) => {
-        await new Promise((resolve, reject) => {
-          const req = indexedDB.open('PelipaivaDB');
-          req.onsuccess = async () => {
-            const db = req.result;
-            const tx = db.transaction(['profiles', 'events'], 'readwrite');
-            const pStore = tx.objectStore('profiles');
-            const eStore = tx.objectStore('events');
-            await pStore.clear();
-            await eStore.clear();
+      const clashProfiles = [
+        { id: 'prof-tuomas', playerName: 'Tuomas', teamName: 'Westend Indians P14 Haastaja', sport: 'floorball' },
+        { id: 'prof-aino', playerName: 'Aino', teamName: 'HJK T13 Sininen', sport: 'football' },
+      ];
+      const clashEvents = [
+        {
+          id: 'match-tuomas-1',
+          profileId: 'prof-tuomas',
+          title: 'Westend Indians vs Oilers',
+          startTime: `${upcomingSat}T07:00:00.000Z`, // 10:00 Finnish local
+          endTime: `${upcomingSat}T08:15:00.000Z`, // 11:15
+          warmupTime: `${upcomingSat}T06:15:00.000Z`, // 09:15
+          venue: { name: 'Otahalli Espoo', normalizedName: 'otahalli', coordinates: { lat: 60.1841, lng: 24.8315 } },
+          parking: { easeScore: 'easy', easeScoreValue: 95, feeZone: 'Maksuton (Pysäköintikiekko 4h)', warnings: [] },
+          sport: 'floorball',
+          homeTeam: 'Westend Indians',
+          awayTeam: 'Oilers',
+          isHomeMatch: true,
+        },
+        {
+          id: 'match-aino-1',
+          profileId: 'prof-aino',
+          title: 'HJK Sininen vs KäPa',
+          startTime: `${upcomingSat}T07:30:00.000Z`, // 10:30 Finnish local
+          endTime: `${upcomingSat}T08:45:00.000Z`, // 11:45
+          warmupTime: `${upcomingSat}T06:45:00.000Z`, // 09:45
+          venue: { name: 'Töölön Pallokenttä', normalizedName: 'töölön pallokenttä', coordinates: { lat: 60.1873, lng: 24.9258 } },
+          parking: { easeScore: 'tight', easeScoreValue: 25, feeZone: 'Maksullinen Vyöhyke 2 (€2/h)', warnings: ['🔴 Ahdas parkki', 'Valvontariski (8/10)'] },
+          sport: 'football',
+          homeTeam: 'HJK Sininen',
+          awayTeam: 'KäPa',
+          isHomeMatch: true,
+        },
+      ];
+      const alert = page.locator('button[aria-label^="Logistiikkaristiriita"]');
+      const twoDrivers = /kaksi kuskia|2 kuskia|yksi vanhempi per kenttä/i;
 
-            pStore.put({
-              id: 'prof-tuomas',
-              playerName: 'Tuomas',
-              teamName: 'Westend Indians P14 Haastaja',
-              sport: 'floorball',
-            });
-            pStore.put({
-              id: 'prof-aino',
-              playerName: 'Aino',
-              teamName: 'HJK T13 Sininen',
-              sport: 'football',
-            });
+      const checkClash = async (phase) => {
+        await page.reload({ waitUntil: 'networkidle' });
+        await alert.first().waitFor({ state: 'visible', timeout: 10000 });
+        const alertText = await alert.first().innerText();
+        // Presence windows 09:15–11:15 and 09:45–11:45 overlap by exactly 90 minutes.
+        for (const needle of ['Päällekkäisyys', 'Tuomas', 'Aino', 'Otahalli Espoo', 'Töölön Pallokenttä', 'päällekkäin 90 min']) {
+          if (!alertText.includes(needle)) throw new Error(`DOM-01 (${phase}): conflict alert missing "${needle}": ${alertText}`);
+        }
+        if (!twoDrivers.test(alertText)) {
+          throw new Error(`DOM-01 (${phase}): conflict alert has no two-driver advice: ${alertText}`);
+        }
+        if (GUESSED_DRIVE_TEXT.test(alertText)) {
+          throw new Error(`DOM-01 (${phase}): conflict alert shows guessed drive minutes: ${alertText}`);
+        }
+        const bodyText = await page.innerText('body');
+        const shownParking = INVENTED_PARKING_TEXT.filter((t) => bodyText.includes(t));
+        if (shownParking.length) throw new Error(`${phase}: stale parking estimate shown: ${shownParking.join(', ')}`);
+        return { alertText, bodyText };
+      };
 
-            eStore.put({
-              id: 'match-tuomas-1',
-              profileId: 'prof-tuomas',
-              title: 'Westend Indians vs Oilers',
-              startTime: `${satDate}T07:00:00.000Z`, // 10:00 Finnish local
-              endTime: `${satDate}T08:15:00.000Z`,   // 11:15
-              warmupTime: `${satDate}T06:15:00.000Z`,// 09:15
-              venue: {
-                name: 'Otahalli Espoo',
-                normalizedName: 'otahalli',
-                coordinates: { lat: 60.1841, lng: 24.8315 },
-              },
-              parking: {
-                easeScore: 'easy',
-                easeScoreValue: 95,
-                lotName: 'Otahalli Pääparkkialue',
-                coordinates: { lat: 60.1841, lng: 24.8315 },
-                feeZone: 'Maksuton (Pysäköintikiekko 4h)',
-                parkingDiscRequired: true,
-                maxParkingHours: 4,
-                walkingTimeMinutes: 2,
-                walkingDistanceMeters: 120,
-                warnings: [],
-                mapsNavigationUrl: 'https://www.google.com/maps/dir/?api=1&destination=60.1841,24.8315',
-              },
-              sport: 'floorball',
-              homeTeam: 'Westend Indians',
-              awayTeam: 'Oilers',
-              isHomeMatch: true,
-            });
-
-            eStore.put({
-              id: 'match-aino-1',
-              profileId: 'prof-aino',
-              title: 'HJK Sininen vs KäPa',
-              startTime: `${satDate}T07:30:00.000Z`, // 10:30 Finnish local
-              endTime: `${satDate}T08:45:00.000Z`,   // 11:45
-              warmupTime: `${satDate}T06:45:00.000Z`,// 09:45
-              venue: {
-                name: 'Töölön Pallokenttä',
-                normalizedName: 'töölön pallokenttä',
-                coordinates: { lat: 60.1873, lng: 24.9258 },
-              },
-              parking: {
-                easeScore: 'tight',
-                easeScoreValue: 25,
-                lotName: 'Urheilukatu / Stadionin hiekkakenttä',
-                coordinates: { lat: 60.1873, lng: 24.9258 },
-                feeZone: 'Maksullinen Vyöhyke 2 (€2/h)',
-                parkingDiscRequired: true,
-                maxParkingHours: 2,
-                walkingTimeMinutes: 4,
-                walkingDistanceMeters: 350,
-                warnings: ['🔴 Ahdas parkki', 'Valvontariski (8/10)'],
-                mapsNavigationUrl: 'https://www.google.com/maps/dir/?api=1&destination=60.1873,24.9258',
-              },
-              sport: 'football',
-              homeTeam: 'HJK Sininen',
-              awayTeam: 'KäPa',
-              isHomeMatch: true,
-            });
-
-            tx.oncomplete = () => resolve();
-            tx.onerror = () => reject(tx.error);
-          };
-          req.onerror = () => reject(req.error);
-        });
-      }, upcomingSat);
-
-      await page.reload({ waitUntil: 'networkidle' });
-
-      // Assert DOM-01: Conflict alert is visible
-      const bodyText = await page.innerText('body');
-      const hasConflictTitle = bodyText.includes('RISTIRIITA') || bodyText.includes('Päällekkäisyys');
-      const hasConflictAdvisory =
-        bodyText.includes('kaksi kuskia') ||
-        bodyText.includes('2 kuskia') ||
-        bodyText.includes('kimppakyyti') ||
-        bodyText.includes('Tarvitaan kaksi kuskia tai kimppakyyti!');
-
-      if (!hasConflictTitle) {
-        throw new Error('DOM-01 Failure: Conflict alert banner ("Ristiriita" / "Päällekkäisyys") not rendered in DOM');
+      // Phase A: no home set. The clash is stated, travel time is unknown, nothing is guessed.
+      await seedPelipaiva(page, { profiles: clashProfiles, events: clashEvents, home: null });
+      const noHome = await checkClash('no home');
+      if (/Lähde klo \d/.test(noHome.bodyText)) {
+        throw new Error('No home set, yet a leave time ("Lähde klo") is shown');
+      }
+      if (!noHome.bodyText.includes('Lisää kotiosoite')) {
+        throw new Error('No home set, but the "Lisää kotiosoite" prompt is missing');
       }
 
-      if (!hasConflictAdvisory) {
-        throw new Error('DOM-01 Failure: Advisory missing dual-driver warning ("kaksi kuskia" / "2 kuskia")');
+      // The alert opens the family carpool planner: one driver per kid, plain labels.
+      await alert.first().click();
+      const planner = page.locator('div[role="dialog"]').filter({ hasText: 'Kyytiapuri' });
+      await planner.first().waitFor({ state: 'visible', timeout: 5000 });
+      const plannerText = await planner.first().innerText();
+      if (!plannerText.includes('Kuski 1') || !plannerText.includes('Kuski 2') || !twoDrivers.test(plannerText)) {
+        throw new Error(`Carpool planner missing two-driver plan (Kuski 1 / Kuski 2 + advice): ${plannerText.slice(0, 600)}`);
       }
+      if (/kuski-\d/.test(plannerText) || GUESSED_DRIVE_TEXT.test(plannerText)) {
+        throw new Error(`Carpool planner shows internal ids or guessed drive minutes: ${plannerText.slice(0, 600)}`);
+      }
+      await page.keyboard.press('Escape');
 
-      // Assert Haversine transit calculation reflects ~28m (or >= 15m)
-      const hasTransitBuffer = bodyText.includes('28 min') || bodyText.includes('siirtymä') || bodyText.includes('Ajoaika');
-      if (!hasTransitBuffer) {
-        throw new Error('Transit buffer between Otahalli & Töölö not displayed');
+      // Phase B: home set (Tapiola). Same two-driver advice, now with real leave times.
+      await seedPelipaiva(page, { profiles: clashProfiles, events: clashEvents, home: TEST_HOME });
+      const withHome = await checkClash('home set');
+      if (!/Lähde klo \d{1,2}[.:]\d{2}/.test(withHome.bodyText)) {
+        throw new Error('Home set, but no leave time ("Lähde klo HH.MM") is shown');
       }
 
       // Assert DOM-06: Switch to Compact ("Tiivis") view within SLA (< 150ms)
@@ -593,16 +670,19 @@ export async function runRealUserGoldenTestSuite() {
         throw new Error('DOM-06 Failure: Compact tab failed to select');
       }
 
+      await page.evaluate((key) => localStorage.removeItem(key), PELIPAIVA_HOME_KEY);
+
       const duration = performance.now() - t0;
       recordPass(
         'Journey 1',
         'Multi-Sport Family Saturday Clash (Espoo vs Helsinki)',
-        'DOM-01 (Conflict banner), DOM-06 (Compact switch < 150ms), 28m transit buffer',
+        'DOM-01 (clash + two-driver advice, with and without home), no guessed drive minutes, DOM-06',
         duration,
-        `Detected Saturday clash (Otahalli vs Töölö). Dual-driver advisory verified. Tab switch: ${Math.round(switchLatency)}ms.`
+        `Clash Otahalli vs Töölö (90 min) with two-driver advice in alert and planner, with and without a home; leave time only with a home. Tab switch: ${Math.round(switchLatency)}ms.`
       );
     } catch (err) {
-      recordFail('Journey 1', 'Multi-Sport Family Saturday Clash', 'DOM-01, DOM-06, Transit buffer', performance.now() - t0, err.message);
+      await page.evaluate((key) => localStorage.removeItem(key), PELIPAIVA_HOME_KEY).catch(() => {});
+      recordFail('Journey 1', 'Multi-Sport Family Saturday Clash', 'DOM-01, DOM-06, honest travel time', performance.now() - t0, err.message);
     }
   }
 
@@ -616,330 +696,230 @@ export async function runRealUserGoldenTestSuite() {
     try {
       await page.goto('https://pelipaiva.pages.dev', { waitUntil: 'domcontentloaded' });
 
-      // Seed a coach's MyClub calendar entry (09:30 gathering) and the real official Palloliitto
+      // A coach's MyClub calendar entry (09:30 gathering) and the real official Palloliitto
       // fixture it duplicates: TASO match 4208631, EsPa/Keltainen 3 – PPJ/Laru sin (team 185085),
       // P13 Kolmonen, Su 4.10.2026 10:15–11:25 at Matinkylä 2 TN B, Espoo (checked 2026-10-08).
       // TASO gives no venue coordinates, so none are seeded.
-      await page.evaluate(async () => {
-        await new Promise((resolve, reject) => {
-          const req = indexedDB.open('PelipaivaDB');
-          req.onsuccess = async () => {
-            const db = req.result;
-            const tx = db.transaction(['profiles', 'events'], 'readwrite');
-            const pStore = tx.objectStore('profiles');
-            const eStore = tx.objectStore('events');
-            await pStore.clear();
-            await eStore.clear();
+      const fixtureId = 'palloliitto_185085_4208631';
+      const reconciliationPair = (day) => [
+        {
+          id: 'cal-ppj-away-1',
+          profileId: 'prof-johanna',
+          title: 'EsPa - PPJ (Vierasottelu) - Valkoinen peliasu!',
+          startTime: `${day}T06:30:00.000Z`, // 09:30 Finnish local
+          endTime: `${day}T08:25:00.000Z`,
+          warmupTime: `${day}T06:30:00.000Z`,
+          venue: { name: 'Matinkylä 2 TN B', normalizedName: 'matinkylä 2 tn b' },
+          sport: 'football',
+          homeTeam: 'EsPa',
+          awayTeam: 'PPJ',
+          isHomeMatch: false,
+        },
+        {
+          id: `fixture-prof-johanna-${fixtureId}`,
+          officialFixtureId: fixtureId,
+          profileId: 'prof-johanna',
+          title: 'EsPa/Keltainen 3 vs PPJ/Laru sin',
+          startTime: `${day}T07:15:00.000Z`, // 10:15 Finnish local
+          endTime: `${day}T08:25:00.000Z`, // 11:25
+          warmupTime: `${day}T06:30:00.000Z`,
+          venue: { name: 'Matinkylä 2 TN B', normalizedName: 'matinkylä 2 tn b' },
+          sport: 'football',
+          homeTeam: 'EsPa/Keltainen 3',
+          awayTeam: 'PPJ/Laru sin',
+          isHomeMatch: false,
+        },
+      ];
+      const johanna = [{ id: 'prof-johanna', playerName: 'Johanna', teamName: 'PPJ/Laru sin', sport: 'football' }];
+      const cards = page.locator('[data-testid="matchday-card"]');
 
-            pStore.put({
-              id: 'prof-johanna',
-              playerName: 'Johanna',
-              teamName: 'PPJ/Laru sin',
-              sport: 'football',
-            });
+      const checkReconciledCard = async (phase) => {
+        // DOM-02: the two sources are one game: one stored event, one card.
+        const stored = (await readPelipaivaEvents(page)).filter((e) => !e.isHidden && !e.mergedIntoEventId);
+        if (stored.length !== 1 || stored[0].officialFixtureId !== fixtureId) {
+          throw new Error(`DOM-02 (${phase}): expected 1 stored event for ${fixtureId}, got ${JSON.stringify(stored.map((e) => [e.id, e.officialFixtureId]))}`);
+        }
+        const cardCount = await cards.count();
+        if (cardCount !== 1) throw new Error(`DOM-02 (${phase}): expected exactly 1 card, found ${cardCount}`);
+        const cardText = await cards.first().innerText();
+        for (const needle of ['EsPa/Keltainen 3', 'PPJ/Laru sin', '10.15', '09.30']) {
+          if (!cardText.includes(needle)) throw new Error(`DOM-02 (${phase}): card missing "${needle}": ${cardText.slice(0, 400)}`);
+        }
+        // The intentional 45-min gathering offset is not a schedule change; away roles are not inverted.
+        if (/Aikataulumuutos/.test(cardText) || cardText.includes('Vastustaja ei täsmää')) {
+          throw new Error(`DOM-02 (${phase}): false-positive schedule/opponent warning: ${cardText.slice(0, 400)}`);
+        }
+        // The card links to the match in Football Stats and Palloliitto's results service.
+        const hrefs = await cards.first().locator('a[href]').evaluateAll((as) => as.map((a) => a.href));
+        for (const url of ['https://football-stats-agk.pages.dev/#/match/4208631', 'https://tulospalvelu.palloliitto.fi/match/4208631']) {
+          if (!hrefs.includes(url)) throw new Error(`DOM-02 (${phase}): card has no link ${url}`);
+        }
+        return cardText;
+      };
 
-            // Coach MyClub calendar event with gathering 09:30
-            eStore.put({
-              id: 'cal-ppj-away-1',
-              profileId: 'prof-johanna',
-              title: 'EsPa - PPJ (Vierasottelu) - Valkoinen peliasu!',
-              startTime: '2026-10-04T06:30:00.000Z', // 09:30 Finnish local
-              endTime: '2026-10-04T08:25:00.000Z',
-              warmupTime: '2026-10-04T06:30:00.000Z',
-              venue: {
-                name: 'Matinkylä 2 TN B',
-                normalizedName: 'matinkylä 2 tn b',
-              },
-              sport: 'football',
-              homeTeam: 'EsPa',
-              awayTeam: 'PPJ',
-              isHomeMatch: false,
-            });
-
-            // Official Palloliitto fixture at 10:15 (45-min warmup offset)
-            eStore.put({
-              id: 'fixture-prof-johanna-palloliitto_185085_4208631',
-              officialFixtureId: 'palloliitto_185085_4208631',
-              profileId: 'prof-johanna',
-              title: 'EsPa/Keltainen 3 vs PPJ/Laru sin',
-              startTime: '2026-10-04T07:15:00.000Z', // 10:15 Finnish local
-              endTime: '2026-10-04T08:25:00.000Z', // 11:25
-              warmupTime: '2026-10-04T06:30:00.000Z',
-              venue: {
-                name: 'Matinkylä 2 TN B',
-                normalizedName: 'matinkylä 2 tn b',
-              },
-              sport: 'football',
-              homeTeam: 'EsPa/Keltainen 3',
-              awayTeam: 'PPJ/Laru sin',
-              isHomeMatch: false,
-            });
-
-            tx.oncomplete = () => resolve();
-            tx.onerror = () => reject(tx.error);
-          };
-          req.onerror = () => reject(req.error);
-        });
-      });
-
-      // Switch back to Cards view
+      // Phase A: the real fixture as seeded. It was played on 4.10., so it sits under
+      // "aiemmat ottelut": folded, counted, and one tap away. It must not vanish.
+      await seedPelipaiva(page, { profiles: johanna, events: reconciliationPair('2026-10-04') });
       await page.reload({ waitUntil: 'networkidle' });
       await page.locator('button[role="tab"]:has-text("Kortit")').click();
       await page.waitForTimeout(500);
-
-      // Tighten DOM-02 Assertion: Query exactly 1 card rendered for the reconciled fixture
-      const matchdayCards = page.locator('article.liquid-glass, [data-testid="matchday-card"]');
-      const cardCount = await matchdayCards.count();
-      if (cardCount !== 1) {
-        throw new Error(`DOM-02 Failure: Expected exactly 1 reconciled card, but found ${cardCount} cards in DOM`);
+      if ((await cards.count()) !== 0) {
+        throw new Error('A game played on 4.10. is shown among upcoming games');
       }
+      const foldNote = await page.locator('text=/1 aiempaa ottelua piilotettu/').count();
+      if (foldNote !== 1) throw new Error('Past game not counted in the "aiempaa ottelua piilotettu" note');
+      await page.locator('button:has-text("Näytä aiemmat")').first().click();
+      await page.waitForTimeout(500);
+      await checkReconciledCard('played 4.10.');
 
-      const cardText = await matchdayCards.first().innerText();
+      // Phase B: the same pair on the coming Sunday, as it looks before kickoff. Kit advice
+      // only shows on upcoming cards.
+      await seedPelipaiva(page, { profiles: johanna, events: reconciliationPair(getUpcomingSundayDateISO()) });
+      await page.reload({ waitUntil: 'networkidle' });
+      await page.locator('button[role="tab"]:has-text("Kortit")').click();
+      await page.waitForTimeout(500);
+      const upcomingText = await checkReconciledCard('upcoming');
 
-      // Assert kickoff is 10:15 (or gathering 09:30)
-      const hasTimes = ['9.30', '09.30', '9:30', '09:30', '10.15', '10:15'].some((t) => cardText.includes(t));
-      if (!hasTimes) {
-        throw new Error(`DOM-02 Failure: Reconciled card missing kickoff or gathering time: ${cardText}`);
-      }
-
-      // Assert intentional 45-min warmup offset does not produce spurious "Aikataulumuutos" warning
-      if (/Aikataulumuutos:\s*0?9[:.]30\s*->\s*10[:.]15/.test(cardText)) {
-        throw new Error('Warmup offset defect: False-positive "Aikataulumuutos" alert produced for intentional warmup window');
-      }
-
-      // Assert away match role inversion: Opponent is EsPa, own team is PPJ
-      if (cardText.includes('Vastustaja ei täsmää')) {
-        throw new Error('Opponent inversion defect: False-positive "Vastustaja ei täsmää" warning produced for away game');
-      }
-
-      // Assert DOM-03: Valkoinen peliasu / Vieraspaita kit recommendation
-      const hasWhiteKit =
-        cardText.includes('Vieraspaita') ||
-        cardText.includes('varapaita') ||
-        cardText.includes('Valkoinen') ||
-        cardText.includes('peliasu');
-
-      if (!hasWhiteKit) {
-        throw new Error('DOM-03 Failure: White kit / away kit recommendation badge missing from reconciled card');
+      // DOM-03: away game, so the away kit (calendar said "Valkoinen peliasu").
+      const hasAwayKit = ['Vieraspaita', 'varapaita', 'Valkoinen'].some((t) => upcomingText.includes(t));
+      if (!hasAwayKit) {
+        throw new Error(`DOM-03 Failure: away kit advice missing from reconciled card: ${upcomingText.slice(0, 400)}`);
       }
 
       const duration = performance.now() - t0;
       recordPass(
         'Journey 2',
         'Away Match Calendar Reconciliation & Kit Disambiguation',
-        'DOM-02 (toHaveCount(1) card deduplication), DOM-03 (Valkoinen peliasu), No spurious alerts',
+        'DOM-02 (1 stored event, 1 card, past + upcoming), DOM-03 (away kit), stats links, no spurious alerts',
         duration,
-        'Reconciled the 09:30 MyClub gathering with real fixture 4208631 (10:15 kickoff). Verified exactly 1 card rendered.'
+        'Real fixture 4208631 merged with the 09:30 MyClub gathering: played game folded under "aiemmat" and shown as 1 card on tap; upcoming copy shows 1 card with away kit.'
       );
     } catch (err) {
       recordFail('Journey 2', 'Away Match Reconciliation', 'DOM-02, DOM-03, kit normalizer', performance.now() - t0, err.message);
     }
   }
 
-  // Journey 3: Urban Spatial Parking Risk & Walking Navigation (ParkkiS)
+  // Journey 3: Parking via ParkkiS link
   if (shouldRun('Journey 3')) {
     const t0 = performance.now();
     console.log('──────────────────────────────────────────────────────────────────────');
-    console.log('👑 JOURNEY 3: Urban Spatial Parking Risk & Walking Navigation (ParkkiS)');
+    console.log('👑 JOURNEY 3: Parking via ParkkiS (Pelipäivä links, never estimates)');
     console.log('──────────────────────────────────────────────────────────────────────');
 
     try {
       await page.goto('https://pelipaiva.pages.dev', { waitUntil: 'domcontentloaded' });
 
-      // Seed Otahalli (Safe disc) and Kamppi / Kisahalli (Trap) events into PelipaivaDB
+      // Pelipäivä has no parking data; ParkkiS does. Each game with an exact venue pin gets one
+      // ParkkiS link, a venue without a pin gets none, and old stored parking estimates
+      // (seeded below) are never shown.
       const upcomingSat = getUpcomingSaturdayDateISO();
-      await page.evaluate(async (satDate) => {
-        await new Promise((resolve, reject) => {
-          const req = indexedDB.open('PelipaivaDB');
-          req.onsuccess = async () => {
-            const db = req.result;
-            const tx = db.transaction(['profiles', 'events'], 'readwrite');
-            const pStore = tx.objectStore('profiles');
-            const eStore = tx.objectStore('events');
-            await pStore.clear();
-            await eStore.clear();
-
-            pStore.put({
-              id: 'prof-mikko',
-              playerName: 'Mikko',
-              teamName: 'Westend Indians',
-              sport: 'floorball',
-            });
-
-            // Otahalli: Safe disc parking (4h disc, risk 2/10)
-            eStore.put({
-              id: 'match-otahalli-safe',
-              profileId: 'prof-mikko',
-              title: 'Westend Indians vs Oilers @ Otahalli',
-              startTime: `${satDate}T07:00:00.000Z`,
-              endTime: `${satDate}T08:30:00.000Z`,
-              venue: {
-                name: 'Otahalli Espoo',
-                normalizedName: 'otahalli',
-                coordinates: { lat: 60.1841, lng: 24.8315 },
-              },
-              parking: {
-                easeScore: 'easy',
-                easeScoreValue: 95,
-                lotName: 'Otahalli Pääparkkialue',
-                coordinates: { lat: 60.1841, lng: 24.8315 },
-                feeZone: 'Maksuton (Pysäköintikiekko 4h)',
-                parkingDiscRequired: true,
-                maxParkingHours: 4,
-                walkingTimeMinutes: 2,
-                walkingDistanceMeters: 120,
-                warnings: [],
-                mapsNavigationUrl: 'https://www.google.com/maps/dir/?api=1&destination=60.1841,24.8315',
-              },
-              sport: 'floorball',
-              homeTeam: 'Westend Indians',
-              awayTeam: 'Oilers',
-              isHomeMatch: true,
-            });
-
-            // Kamppi / Kisahalli: High-risk parking trap (Zone 1, €4/h, risk 8/10)
-            eStore.put({
-              id: 'match-kamppi-trap',
-              profileId: 'prof-mikko',
-              title: 'Kamppi Away Clash @ Malminkatu',
-              startTime: `${satDate}T12:00:00.000Z`,
-              endTime: `${satDate}T13:30:00.000Z`,
-              venue: {
-                name: 'Kamppi Keskus / Malminkatu',
-                normalizedName: 'kamppi',
-                coordinates: { lat: 60.1685, lng: 24.9312 },
-              },
-              parking: {
-                easeScore: 'tight',
-                easeScoreValue: 20,
-                lotName: 'Malminkatu 24 Kadunvarsi',
-                coordinates: { lat: 60.1685, lng: 24.9312 },
-                feeZone: 'Maksullinen Vyöhyke 1 (€4/h)',
-                parkingDiscRequired: false,
-                maxParkingHours: 2,
-                walkingTimeMinutes: 3,
-                walkingDistanceMeters: 200,
-                warnings: ['🔴 Ahdas parkki', 'Valvontariski (8/10)'],
-                mapsNavigationUrl: 'https://www.google.com/maps/dir/?api=1&destination=60.1685,24.9312',
-              },
-              sport: 'floorball',
-              homeTeam: 'Kamppi Wolves',
-              awayTeam: 'Westend Indians',
-              isHomeMatch: false,
-            });
-
-            tx.oncomplete = () => resolve();
-            tx.onerror = () => reject(tx.error);
-          };
-          req.onerror = () => reject(req.error);
-        });
-      }, upcomingSat);
+      const staleParking = {
+        easeScore: 'tight',
+        easeScoreValue: 20,
+        lotName: 'Malminkatu 24 Kadunvarsi',
+        feeZone: 'Maksullinen Vyöhyke 1 (€4/h)',
+        parkingDiscRequired: false,
+        warnings: ['🔴 Ahdas parkki', 'Valvontariski (8/10)'],
+      };
+      const game = (id, title, startHourUtc, venue, extra = {}) => ({
+        id,
+        profileId: 'prof-mikko',
+        title,
+        startTime: `${upcomingSat}T${String(startHourUtc).padStart(2, '0')}:00:00.000Z`,
+        endTime: `${upcomingSat}T${String(startHourUtc + 1).padStart(2, '0')}:30:00.000Z`,
+        venue,
+        parking: staleParking,
+        sport: 'floorball',
+        homeTeam: 'Westend Indians',
+        awayTeam: 'Oilers',
+        isHomeMatch: true,
+        ...extra,
+      });
+      await seedPelipaiva(page, {
+        profiles: [{ id: 'prof-mikko', playerName: 'Mikko', teamName: 'Westend Indians', sport: 'floorball' }],
+        events: [
+          game('match-otahalli', 'Westend Indians vs Oilers @ Otahalli', 7, {
+            name: 'Otahalli Espoo',
+            normalizedName: 'otahalli',
+            coordinates: { lat: 60.1841, lng: 24.8315 },
+          }),
+          game('match-kamppi', 'Kamppi Away Clash @ Malminkatu', 12, {
+            name: 'Kamppi Keskus / Malminkatu',
+            normalizedName: 'kamppi',
+            coordinates: { lat: 60.1685, lng: 24.9312 },
+          }, { homeTeam: 'Kamppi Wolves', awayTeam: 'Westend Indians', isHomeMatch: false }),
+          game('match-nopin', 'Westend Indians vs Tuntematon', 15, {
+            name: 'Tuntematon koulun sali',
+            normalizedName: 'tuntematon koulun sali',
+          }),
+        ],
+      });
 
       await page.reload({ waitUntil: 'networkidle' });
       await page.locator('button[role="tab"]:has-text("Kortit")').click();
       await page.waitForTimeout(500);
-
-      // 1. Assert DOM-04: Otahalli safe disc parking badge
-      const badges = page.locator('[data-testid="parking-ease-badge"], button:has-text("Helppo parkki"), button:has-text("Ahdas parkki")');
-      const badgeCount = await badges.count();
-      if (badgeCount < 2) {
-        throw new Error(`Expected at least 2 parking badges in DOM, found ${badgeCount}`);
+      // Later cards keep details behind "Lisätiedot"; open them like a parent would.
+      const moreButtons = page.locator('button:has-text("Lisätiedot")');
+      for (let i = 0; i < (await moreButtons.count()); i++) {
+        await moreButtons.nth(i).click();
+        await page.waitForTimeout(200);
       }
+      await page.waitForTimeout(600); // let the expand animation settle
 
-      const otahalliBadge = badges.first();
-      const otahalliBadgeText = await otahalliBadge.innerText();
-      if (!otahalliBadgeText.includes('Helppo parkki') && !otahalliBadgeText.includes('🟢')) {
-        throw new Error(`DOM-04 Failure: Otahalli badge missing "Helppo parkki": ${otahalliBadgeText}`);
+      const cardCount = await page.locator('[data-testid="matchday-card"]').count();
+      if (cardCount !== 3) throw new Error(`Expected 3 game cards, found ${cardCount}`);
+
+      // DOM-04: one ParkkiS link per pinned venue, exact pelipaiva buildParkingDeepLink format
+      // (/venue/<encoded venue name>?lat=&lon=), 44 px touch target (layout height, not a
+      // mid-animation transform), honest label.
+      const expected = [
+        { venue: 'Otahalli Espoo', href: 'https://parkkis.pages.dev/venue/Otahalli%20Espoo?lat=60.1841&lon=24.8315' },
+        { venue: 'Kamppi Keskus / Malminkatu', href: 'https://parkkis.pages.dev/venue/Kamppi%20Keskus%20%2F%20Malminkatu?lat=60.1685&lon=24.9312' },
+      ];
+      const links = page.locator('[data-testid="parkkis-link"]');
+      const linkInfo = await links.evaluateAll((as) =>
+        as.map((a) => ({ href: a.href, label: a.getAttribute('aria-label') || '', text: a.innerText, height: a.offsetHeight }))
+      );
+      if (linkInfo.length !== expected.length) {
+        throw new Error(`DOM-04: expected ${expected.length} ParkkiS links (pinned venues only), found ${linkInfo.length}: ${linkInfo.map((l) => l.href).join(', ')}`);
       }
-
-      // Check touch target height (WCAG min-h-[44px])
-      const otahalliBox = await otahalliBadge.boundingBox();
-      if (!otahalliBox || otahalliBox.height < 40) {
-        throw new Error(`DOM-04 Failure: Parking badge touch target height (${otahalliBox?.height}px) < 40px`);
-      }
-
-      // 2. Assert DOM-05: Kamppi Zone 1 trap badge
-      const kamppiBadge = badges.nth(1);
-      const kamppiBadgeText = await kamppiBadge.innerText();
-      const hasKamppiTrapText =
-        kamppiBadgeText.includes('Ahdas parkki') ||
-        kamppiBadgeText.includes('🔴') ||
-        kamppiBadgeText.includes('Valvontariski') ||
-        kamppiBadgeText.includes('Vyöhyke 1') ||
-        kamppiBadgeText.includes('Zone 1');
-
-      if (!hasKamppiTrapText) {
-        throw new Error(`DOM-05 Failure: Kamppi badge missing trap/zone warning: ${kamppiBadgeText}`);
-      }
-
-      // 3. Open Parking Modal to test Tieliikennelaki 2020 § 40 disc arrival rounding and 4h limit
-      await otahalliBadge.click();
-      await page.waitForSelector('div[role="dialog"]', { timeout: 5000 });
-      const modalText = await page.locator('div[role="dialog"]').innerText();
-
-      if (!modalText.includes('4h') && !modalText.includes('kiekko') && !modalText.includes('Kiekko')) {
-        throw new Error(`DOM-04 Failure: Otahalli parking modal missing 4h disc indicator: ${modalText}`);
-      }
-
-      // Verify Tieliikennelaki § 40 rounding logic in browser runtime context
-      const discMath = await page.evaluate(() => {
-        function roundDisc(date) {
-          const mins = date.getMinutes();
-          const d = new Date(date);
-          if (mins === 0 || mins === 30) {
-            return d.toLocaleTimeString('fi-FI', { hour: '2-digit', minute: '2-digit' });
-          } else if (mins < 30) {
-            d.setMinutes(30, 0, 0);
-          } else {
-            d.setHours(d.getHours() + 1, 0, 0, 0);
-          }
-          return d.toLocaleTimeString('fi-FI', { hour: '2-digit', minute: '2-digit' });
+      for (const exp of expected) {
+        const link = linkInfo.find((l) => l.href === exp.href);
+        if (!link) throw new Error(`DOM-04: no ParkkiS link ${exp.href} (got ${linkInfo.map((l) => l.href).join(', ')})`);
+        if (!link.text.includes('Parkkis') || !link.label.includes(exp.venue)) {
+          throw new Error(`DOM-04: ParkkiS link for ${exp.venue} has unclear text/label: "${link.text}" / "${link.label}"`);
         }
-        return {
-          d1405: roundDisc(new Date('2026-09-05T14:05:00')),
-          d1435: roundDisc(new Date('2026-09-05T14:35:00')),
-          d1430: roundDisc(new Date('2026-09-05T14:30:00')),
-        };
-      });
-
-      if (discMath.d1405 !== '14.30' && discMath.d1405 !== '14:30') {
-        throw new Error(`Tieliikennelaki § 40: 14:05 must round to 14:30, got: ${discMath.d1405}`);
-      }
-      if (discMath.d1435 !== '15.00' && discMath.d1435 !== '15:00') {
-        throw new Error(`Tieliikennelaki § 40: 14:35 must round to 15:00, got: ${discMath.d1435}`);
-      }
-      if (discMath.d1430 !== '14.30' && discMath.d1430 !== '14:30') {
-        throw new Error(`Tieliikennelaki § 40: 14:30 must stay 14:30, got: ${discMath.d1430}`);
+        if (link.height < 44) throw new Error(`DOM-04: ParkkiS link for ${exp.venue} touch target ${link.height}px < 44px`);
       }
 
-      // Close modal
-      await page.keyboard.press('Escape');
-      await page.waitForTimeout(300);
+      // DOM-05: no parking estimate of Pelipäivä's own, even with stale stored blobs.
+      const bodyText = await page.innerText('body');
+      const shown = INVENTED_PARKING_TEXT.concat(['Malminkatu 24']).filter((t) => bodyText.includes(t));
+      if (shown.length) throw new Error(`DOM-05: invented/stale parking text shown: ${shown.join(', ')}`);
 
-      // 4. Deep link to ParkkiS in pelipaiva's buildParkingDeepLink format (pelipaiva #43):
-      //    /venue/<encoded TASO venue name>?lat=&lon=
-      const parkkisUrl = 'https://parkkis.pages.dev/venue/Otahalli%20Espoo?lat=60.1841&lon=24.8315';
-      const parkkisRes = await page.goto(parkkisUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
-      if (!parkkisRes || parkkisRes.status() !== 200) {
-        throw new Error(`ParkkiS deep link failed: HTTP ${parkkisRes ? parkkisRes.status() : 'NONE'}`);
-      }
-
-      await page.waitForTimeout(1000);
-      const rootExists = await page.locator('#root').count();
-      if (rootExists === 0) {
-        throw new Error('ParkkiS map container missing #root element');
+      // The links open the ParkkiS app on that venue route (what ParkkiS shows there is ParkkiS's job).
+      const landed = [];
+      for (const exp of expected) {
+        const res = await page.goto(exp.href, { waitUntil: 'domcontentloaded', timeout: 30000 });
+        if (!res || res.status() !== 200) throw new Error(`ParkkiS deep link failed: HTTP ${res ? res.status() : 'NONE'} for ${exp.href}`);
+        await page.waitForTimeout(1000);
+        if (page.url() !== exp.href) throw new Error(`ParkkiS redirected ${exp.href} to ${page.url()}`);
+        if ((await page.locator('#root').count()) === 0 || !(await page.title()).includes('ParkkiS')) {
+          throw new Error(`ParkkiS app did not load for ${exp.href}`);
+        }
+        landed.push(exp.venue);
       }
 
       const duration = performance.now() - t0;
       recordPass(
         'Journey 3',
-        'Urban Spatial Parking Risk & Walking Navigation (ParkkiS)',
-        'DOM-04 (Otahalli safe disc), DOM-05 (Kamppi zone 1), Tieliikennelaki § 40 rounding',
+        'Parking via ParkkiS link (no Pelipäivä estimates)',
+        'DOM-04 (1 ParkkiS link per pinned venue, href, 44px), DOM-05 (no invented parking text), ParkkiS landing',
         duration,
-        `Verified Otahalli (${otahalliBadgeText.trim()}) and Kamppi trap (${kamppiBadgeText.trim()}). Tieliikennelaki § 40 disc rounded (14:05 -> ${discMath.d1405}). ParkkiS deep link verified.`
+        `ParkkiS links for ${landed.join(' and ')}; none for the unpinned venue; stale parking blobs not shown.`
       );
     } catch (err) {
-      recordFail('Journey 3', 'Urban Spatial Parking Risk', 'DOM-04, DOM-05, Tieliikennelaki § 40', performance.now() - t0, err.message);
+      recordFail('Journey 3', 'Parking via ParkkiS link', 'DOM-04, DOM-05, ParkkiS deep link', performance.now() - t0, err.message);
     }
   }
 
@@ -1494,56 +1474,64 @@ export async function runRealUserGoldenTestSuite() {
 
     try {
       await page.goto('https://pelipaiva.pages.dev', { waitUntil: 'domcontentloaded' });
-      await page.waitForTimeout(500);
+      await page.evaluate(() => localStorage.removeItem('pelipaiva_show_copilot'));
+      await page.reload({ waitUntil: 'networkidle' });
 
-      // Click HUD more menu button
       const moreBtn = page.locator('button[aria-label="Lisää"]');
+      const askBtn = page.locator('button:has-text("Kysy aikataulusta")');
+
+      // The AI assistant is opt-in: hidden from the menu until the family turns it on.
       await moreBtn.click();
       await page.waitForTimeout(300);
+      if ((await askBtn.count()) !== 0) {
+        throw new Error('DOM-07: AI assistant shown in the menu although it is off by default');
+      }
 
-      // Click Ask Copilot menu item ("Kysy aikataulusta")
-      const askBtn = page.locator('button:has-text("Kysy aikataulusta")');
+      // Turn it on in Asetukset like a parent would, then close the dialog with Escape.
+      await page.locator('button:has-text("Asetukset")').first().click();
+      const toggle = page.locator('#toggle-copilot');
+      await toggle.waitFor({ state: 'visible', timeout: 5000 });
+      if ((await toggle.getAttribute('aria-checked')) !== 'false') {
+        throw new Error('DOM-07: AI assistant toggle is not off by default');
+      }
+      await toggle.click();
+      if ((await toggle.getAttribute('aria-checked')) !== 'true') {
+        throw new Error('DOM-07: AI assistant toggle did not switch on');
+      }
+      await page.keyboard.press('Escape');
+      await page.locator('#toggle-copilot').waitFor({ state: 'detached', timeout: 3000 });
+
+      // Now the menu has "Kysy aikataulusta", which opens the drawer.
+      await moreBtn.click();
+      await page.waitForTimeout(300);
       await askBtn.click();
-      await page.waitForTimeout(500);
+      const copilotModal = page.locator('div[role="dialog"]').filter({ hasText: 'Kysy Pelipäivältä' });
+      await copilotModal.first().waitFor({ state: 'visible', timeout: 5000 });
 
-      // Verify Ask Copilot modal dialog is rendered
-      const copilotModal = page.locator('div[role="dialog"]');
-      const isModalVisible = await copilotModal.isVisible();
-      if (!isModalVisible) {
-        throw new Error('DOM-07 Failure: Ask Copilot modal dialog failed to open');
-      }
-
-      const modalText = await copilotModal.innerText();
-      if (!modalText.includes('Kysy Pelipäivältä')) {
-        throw new Error(`DOM-07 Failure: Ask Copilot modal missing heading "Kysy Pelipäivältä": ${modalText}`);
-      }
-
-      // Verify query input is visible and receives focus
       const queryInput = page.locator('input[placeholder*="Kirjoita kysymys"]');
-      const isInputVisible = await queryInput.isVisible();
-      if (!isInputVisible) {
+      if (!(await queryInput.isVisible())) {
         throw new Error('DOM-07 Failure: Query input field not visible in Copilot drawer');
       }
-
       await queryInput.focus();
       const isFocused = await queryInput.evaluate((el) => el === document.activeElement);
       if (!isFocused) {
         throw new Error('DOM-07 Failure: Copilot input field failed to receive focus');
       }
 
-      // Close modal with Escape
       await page.keyboard.press('Escape');
       await page.waitForTimeout(300);
+      await page.evaluate(() => localStorage.removeItem('pelipaiva_show_copilot'));
 
       const duration = performance.now() - t0;
       recordPass(
         'Rubric DOM-07',
         'Ask Copilot AI Drawer Accessibility & Focus',
-        'button:has-text("Kysy aikataulusta") -> dialog visible, input focused',
+        'off by default -> Asetukset toggle -> "Kysy aikataulusta" -> dialog, input focused',
         duration,
-        'Opened Ask Copilot modal, verified "Kysy Pelipäivältä" header and input focus, dismissed via ESC.'
+        'AI assistant hidden by default; enabled in Asetukset (Esc closes); drawer "Kysy Pelipäivältä" opened with focused input; dismissed via ESC.'
       );
     } catch (err) {
+      await page.evaluate(() => localStorage.removeItem('pelipaiva_show_copilot')).catch(() => {});
       recordFail('Rubric DOM-07', 'Ask Copilot AI Drawer', 'DOM-07', performance.now() - t0, err.message);
     }
   }
