@@ -8,11 +8,11 @@
  * calculations, data contracts, and production endpoints across all 6 monasteries:
  * - STEP 1: Live Production Edge Audit (HTTP 200, Live JS Bundles, Commit Hashes, UI Badges)
  * - STEP 2: Real-World URL & Team Ingestion Engine Execution
- * - STEP 3: Multi-Sport Family Conflict & Driving Transit Calculation Execution
- * - STEP 4: Spatial Parking Risk & Walking Guidance Execution (ParkkiS)
+ * - STEP 3: Multi-Sport Family Conflict Agent (pelipaiva conflictAgent) Execution
+ * - STEP 4: ParkkiS Deep Link Contract (parking risk stays in ParkkiS)
  * - STEP 5: Multi-Sport Scoring Strategies & Standings Calculation (SportRulesRegistry)
- * - STEP 6: Football Tournament Head-to-Head & Form Pipeline Execution
- * - STEP 7: Basketball 4-Quarter Scoring, Team Fouls & Bonus Free Throws Execution
+ * - STEP 6: Football Tournament Page Composition
+ * - STEP 7: Basketball Score Logic on Recorded Basket.fi Games
  * - STEP 8: 1-Tap Post-Match WhatsApp Share Generation & Round-Trip Parsing
  * - STEP 9: AI Agent WebMCP Tool Discovery & JSON Schema Validation
  * - STEP 10: Anti-Pattern & Complexity Regression Gate (Ensuring No Regressions to God Components)
@@ -20,7 +20,7 @@
 
 import { existsSync, readFileSync } from 'node:fs'
 import { resolve, join } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 
 // Import actual runtime modules to truly test business logic execution
 import {
@@ -29,8 +29,11 @@ import {
   normalizeUrlString,
 } from '../pelipaiva/src/lib/api/associationUrlParser.ts'
 
-import { detectFamilyConflicts } from '../pelipaiva/src/lib/events/familyConflictEngine.ts'
-import { calculateParkingRiskContract } from '../pelipaiva/src/types/contracts.ts'
+// pelipaiva #36 deleted familyConflictEngine.ts (dead code). The app's real conflict logic:
+import { conflictAgent } from '../pelipaiva/src/lib/agents/conflictAgent.ts'
+// pelipaiva #42 deleted calculateParkingRiskContract (a bounding-box guess, not ParkkiS data).
+// Parking risk belongs to ParkkiS; pelipaiva only builds the deep link.
+import { buildParkingDeepLink } from '../pelipaiva/src/types/contracts.ts'
 import { SportRulesRegistry } from '../pelipaiva/src/lib/stats/SportRulesRegistry.ts'
 
 import {
@@ -49,6 +52,7 @@ console.log('═'.repeat(76) + '\n')
 
 let passedSteps = 0
 const totalSteps = 10
+const failedSteps = []
 
 function pass(stepNum, title, details) {
   passedSteps++
@@ -59,7 +63,8 @@ function pass(stepNum, title, details) {
 function fail(stepNum, title, error) {
   console.error(`❌ [STEP ${stepNum}/${totalSteps}] FAIL: ${title}`)
   console.error(`   Error: ${error}\n`)
-  process.exit(1)
+  // Keep going: one red step must not hide whether the other steps pass.
+  failedSteps.push(`STEP ${stepNum}: ${title}`)
 }
 
 async function runSupremeGoldenTest() {
@@ -76,7 +81,7 @@ async function runSupremeGoldenTest() {
       { name: '🏐 Volleyball Stats', url: 'https://volleyball-stats-7xq.pages.dev' },
     ]
 
-    const loadResults = await Promise.all(
+    const settled = await Promise.allSettled(
       services.map(async (svc) => {
         const res = await fetch(svc.url, { method: 'GET' })
         if (res.status !== 200) {
@@ -123,6 +128,10 @@ async function runSupremeGoldenTest() {
         return `${svc.name}: HTTP 200 OK | git:${foundCommit} | window.__APP_BUILD_INFO__ ✅ | UI Badge ✅`
       })
     )
+    // Report every service, not just the first one that fails.
+    const failures = settled.filter((r) => r.status === 'rejected').map((r) => r.reason?.message || String(r.reason))
+    if (failures.length > 0) throw new Error(failures.join('\n   '))
+    const loadResults = settled.map((r) => r.value)
 
     pass(1, 'All 6 Sovereign Monasteries Live, Deeply Audited & Verified',
       loadResults.join('\n   • '))
@@ -168,59 +177,62 @@ async function runSupremeGoldenTest() {
   // STEP 3: Multi-Sport Family Conflict & Driving Transit Calculation Execution
   // ─────────────────────────────────────────────────────────────────────────────
   try {
-    // Saturday morning scenario: Tuomas (Salibandy) @ Otahalli and Aino (Football) @ Töölö overlapping
-    const mockEvents = [
-      {
-        id: 'match-tuomas-1',
-        profileId: 'prof-tuomas',
-        title: 'Westend Indians vs Oilers',
-        startTime: '2026-09-05T10:00:00Z',
-        endTime: '2026-09-05T11:15:00Z',
-        venue: {
-          name: 'Otahalli Espoo',
-          coordinates: { latitude: 60.1841, longitude: 24.8315 },
-        },
-        sport: 'floorball',
-      },
-      {
-        id: 'match-aino-1',
-        profileId: 'prof-aino',
-        title: 'HJK Sininen vs KäPa',
-        startTime: '2026-09-05T10:30:00Z',
-        endTime: '2026-09-05T11:45:00Z',
-        venue: {
-          name: 'Töölön Pallokenttä',
-          coordinates: { latitude: 60.1873, longitude: 24.9258 },
-        },
-        sport: 'football',
-      },
-    ]
-
+    // Saturday morning: Tuomas (Salibandy) @ Otahalli and Aino (Football) @ Töölö overlap.
+    // Runs pelipaiva's real conflictAgent (src/lib/agents/conflictAgent.ts).
+    const event = (id, profileId, sport, title, warmupTime, startTime, endTime, name, lat, lng) => ({
+      id, profileId, sport, eventType: 'match', isTraining: false, title,
+      homeTeam: '', awayTeam: '', isHomeMatch: true,
+      warmupTime, startTime, endTime,
+      venue: { name, normalizedName: name.toLowerCase(), coordinates: { lat, lng } },
+    })
+    const tuomas = event('match-tuomas-1', 'prof-tuomas', 'floorball', 'Westend Indians vs Oilers',
+      '2026-09-05T09:30:00Z', '2026-09-05T10:00:00Z', '2026-09-05T11:15:00Z', 'Otahalli Espoo', 60.1841, 24.8315)
+    const aino = event('match-aino-1', 'prof-aino', 'football', 'HJK Sininen vs KäPa',
+      '2026-09-05T10:00:00Z', '2026-09-05T10:30:00Z', '2026-09-05T11:45:00Z', 'Töölön Pallokenttä', 60.1873, 24.9258)
     const profiles = [
       { id: 'prof-tuomas', playerName: 'Tuomas' },
       { id: 'prof-aino', playerName: 'Aino' },
     ]
 
-    const conflicts = detectFamilyConflicts(mockEvents, profiles)
-    if (conflicts.length === 0) {
-      throw new Error('Conflict engine failed to detect direct Saturday match overlap!')
+    // 1) Two kids, two venues, overlapping presence windows → one conflict, two drivers.
+    const conflicts = conflictAgent([tuomas, aino], profiles)
+    if (conflicts.length !== 1) {
+      throw new Error(`Expected exactly 1 conflict for the overlapping Saturday matches, got ${conflicts.length}`)
     }
-
     const clash = conflicts[0]
-    if (clash.conflictType !== 'direct_overlap') {
-      throw new Error(`Expected conflictType 'direct_overlap', got: ${clash.conflictType}`)
+    if (clash.childA !== 'Tuomas' || clash.childB !== 'Aino') {
+      throw new Error(`Conflict names wrong: ${clash.childA} / ${clash.childB}`)
+    }
+    // Warmup 09:30–11:15 vs 10:00–11:45 → 75 min overlap.
+    if (clash.overlapMinutes !== 75) {
+      throw new Error(`Expected 75 min overlap (warmup to final whistle), got ${clash.overlapMinutes}`)
+    }
+    if (clash.severity !== 'critical') {
+      throw new Error(`Expected critical severity (overlap > 40 min), got ${clash.severity}`)
+    }
+    if (!(clash.travelMinutesEstimate > 0)) {
+      throw new Error(`Otahalli → Töölö needs a drive estimate, got ${clash.travelMinutesEstimate}`)
+    }
+    if (!clash.suggestedFix.includes('Kaksi kuskia')) {
+      throw new Error(`Advisory missing two-driver warning: ${clash.suggestedFix}`)
     }
 
-    if (clash.drivingMinutesNeeded < 15) {
-      throw new Error(`Driving transit buffer too short: ${clash.drivingMinutesNeeded} mins`)
+    // 2) Two kids at the same venue at the same time → one parent covers both, no conflict.
+    const ainoAtOtahalli = { ...aino, id: 'match-aino-2', venue: tuomas.venue }
+    const sameVenue = conflictAgent([tuomas, ainoAtOtahalli], profiles)
+    if (sameVenue.length !== 0) {
+      throw new Error(`Two kids at the same venue must not conflict, got ${sameVenue.length}`)
     }
 
-    if (!clash.advisoryFinnish.includes('kaksi kuskia')) {
-      throw new Error(`Advisory missing Finnish warning: ${clash.advisoryFinnish}`)
+    // 3) Same child booked into two overlapping games → critical, tell the coach.
+    const tuomasDouble = { ...aino, id: 'match-tuomas-2', profileId: 'prof-tuomas' }
+    const sameChild = conflictAgent([tuomas, tuomasDouble], profiles)
+    if (sameChild.length !== 1 || sameChild[0].severity !== 'critical' || !sameChild[0].suggestedFix.includes('valmentajalle')) {
+      throw new Error(`Same-child double booking must be 1 critical conflict with coach advice, got ${JSON.stringify(sameChild.map((c) => [c.severity, c.suggestedFix]))}`)
     }
 
-    pass(3, 'Multi-Sport Conflict Engine Execution (True Algorithmic Output)',
-      `Clash identified between ${clash.playerName1} and ${clash.playerName2}. Required driving buffer: ${clash.drivingMinutesNeeded} min. Advisory: "${clash.advisoryFinnish}"`)
+    pass(3, 'Multi-Sport Conflict Agent Execution (pelipaiva conflictAgent)',
+      `${clash.childA} vs ${clash.childB}: ${clash.overlapMinutes} min overlap, ~${clash.travelMinutesEstimate} min drive, ${clash.severity}. Fix: "${clash.suggestedFix}" Same venue: no conflict. Same child double-booked: critical.`)
   } catch (err) {
     fail(3, 'Multi-Sport Conflict Detection', err.message)
   }
@@ -229,34 +241,28 @@ async function runSupremeGoldenTest() {
   // STEP 4: Spatial Parking Intelligence & Entrance Gate Guidance (ParkkiS)
   // ─────────────────────────────────────────────────────────────────────────────
   try {
-    // Otahalli in Espoo: Safe disc parking zone
-    const otahalliRisk = calculateParkingRiskContract('otahalli', 'Otahalli Espoo', {
-      lat: 60.1841,
-      lng: 24.8315,
-    })
-
-    if (otahalliRisk.riskRating > 5 || otahalliRisk.safetyCategory !== 'safe') {
-      throw new Error(`Otahalli parking risk expected safe (<5), got: ${otahalliRisk.riskRating}`)
+    // pelipaiva no longer guesses a parking risk from coordinates; ParkkiS owns that data.
+    const contractsSrc = readFileSync(join(ROOT, 'pelipaiva', 'src', 'types', 'contracts.ts'), 'utf-8')
+    if (/export function calculateParkingRiskContract/.test(contractsSrc)) {
+      throw new Error('pelipaiva computes its own parking risk again (calculateParkingRiskContract). Risk must come from ParkkiS.')
     }
 
-    // Downtown Helsinki: Paid Trap Zone
-    const kamppiRisk = calculateParkingRiskContract('kamppi', 'Kamppi Keskus', {
-      lat: 60.1800,
-      lng: 24.9400,
-    })
-
-    if (kamppiRisk.riskRating < 7 || kamppiRisk.safetyCategory !== 'trap') {
-      throw new Error(`Kamppi parking risk expected trap (>=7), got: ${kamppiRisk.riskRating}`)
+    const link = new URL(buildParkingDeepLink('https://parkkis.pages.dev/', 'otahalli', 60.1841, 24.8315))
+    if (link.origin !== 'https://parkkis.pages.dev') {
+      throw new Error(`ParkkiS deep link points at the wrong host: ${link.href}`)
+    }
+    if (link.searchParams.get('venue') !== 'otahalli' || link.searchParams.get('lat') !== '60.1841' || link.searchParams.get('lon') !== '24.8315') {
+      throw new Error(`ParkkiS deep link lost venue or coordinates: ${link.href}`)
+    }
+    const noCoords = new URL(buildParkingDeepLink('https://parkkis.pages.dev/', 'kamppi'))
+    if (noCoords.searchParams.has('lat') || noCoords.searchParams.has('lon')) {
+      throw new Error(`ParkkiS deep link invented coordinates: ${noCoords.href}`)
     }
 
-    if (!otahalliRisk.deepLinkUrl.includes('parkkis.pages.dev/venue/otahalli')) {
-      throw new Error(`Invalid ParkkiS deep link: ${otahalliRisk.deepLinkUrl}`)
-    }
-
-    pass(4, 'ParkkiS Spatial Risk & Deep Link Contract Execution',
-      `Otahalli Risk: ${otahalliRisk.riskRating}/10 (${otahalliRisk.safetyCategory}). Kamppi Risk: ${kamppiRisk.riskRating}/10 (${kamppiRisk.safetyCategory}). Deep link verified: ${otahalliRisk.deepLinkUrl}`)
+    pass(4, 'ParkkiS Deep Link Contract (risk stays in ParkkiS)',
+      `Otahalli: ${link.href}. Without coordinates: ${noCoords.href}. No local parking-risk guess in pelipaiva.`)
   } catch (err) {
-    fail(4, 'ParkkiS Arena Guidance', err.message)
+    fail(4, 'ParkkiS Deep Link Contract', err.message)
   }
 
   // ─────────────────────────────────────────────────────────────────────────────
@@ -299,26 +305,27 @@ async function runSupremeGoldenTest() {
   // STEP 6: Football Head-to-Head & Tournament Ingestion Pipeline
   // ─────────────────────────────────────────────────────────────────────────────
   try {
+    // football-stats #16 (2026-10-08) folded the tournament standings/matches/playoffs
+    // components into the shared StandingsTable and MatchRow. Check what the page really uses.
     const tournamentPagePath = join(ROOT, 'football-stats', 'src', 'pages', 'TurnauksetPage.tsx')
-    const useTournamentHookPath = join(ROOT, 'football-stats', 'src', 'hooks', 'useTournamentData.ts')
-    const standingsTablePath = join(ROOT, 'football-stats', 'src', 'components', 'tournament', 'TournamentStandingsTable.tsx')
-    const matchesListPath = join(ROOT, 'football-stats', 'src', 'components', 'tournament', 'TournamentMatchesList.tsx')
-    const playoffsTreePath = join(ROOT, 'football-stats', 'src', 'components', 'tournament', 'TournamentPlayoffsTree.tsx')
-    const scorersListPath = join(ROOT, 'football-stats', 'src', 'components', 'tournament', 'TournamentScorersList.tsx')
-
-    if (!existsSync(tournamentPagePath) || !existsSync(useTournamentHookPath) || !existsSync(standingsTablePath) || !existsSync(matchesListPath) || !existsSync(playoffsTreePath) || !existsSync(scorersListPath)) {
-      throw new Error('Tournament modular architecture components missing')
+    const required = [
+      tournamentPagePath,
+      join(ROOT, 'football-stats', 'src', 'hooks', 'useTournamentData.ts'),
+      join(ROOT, 'football-stats', 'src', 'components', 'tournament', 'TournamentScorersList.tsx'),
+    ]
+    const missing = required.filter((f) => !existsSync(f))
+    if (missing.length > 0) {
+      throw new Error(`Tournament page files missing: ${missing.map((f) => f.replace(ROOT + '/', '')).join(', ')}`)
+    }
+    const page = readFileSync(tournamentPagePath, 'utf-8')
+    for (const name of ['useTournamentData', 'StandingsTable', 'MatchRow', 'TournamentScorersList']) {
+      if (!new RegExp(`\\b${name}\\b`).test(page)) {
+        throw new Error(`TurnauksetPage no longer uses ${name}`)
+      }
     }
 
-    // Execute slug parser simulation
-    const sampleSlug = 'PPJ/Laru sin-ATW United'
-    const slugParts = sampleSlug.split('-')
-    if (slugParts.length !== 2 || slugParts[0] !== 'PPJ/Laru sin' || slugParts[1] !== 'ATW United') {
-      throw new Error(`Matchup slug parsing failed: ${sampleSlug}`)
-    }
-
-    pass(6, 'Football Tournament Pipeline & Component Decomposition Architecture',
-      'Verified TurnauksetPage consumes useTournamentData, TournamentStandingsTable, TournamentMatchesList, TournamentPlayoffsTree, and TournamentScorersList.')
+    pass(6, 'Football Tournament Page Composition',
+      'TurnauksetPage uses useTournamentData, StandingsTable, MatchRow and TournamentScorersList.')
   } catch (err) {
     fail(6, 'Football Stats Verification', err.message)
   }
@@ -327,30 +334,60 @@ async function runSupremeGoldenTest() {
   // STEP 7: Basketball 4-Quarter Scoring, Team Fouls & Bonus Invariants
   // ─────────────────────────────────────────────────────────────────────────────
   try {
-    const basketContractsPath = join(ROOT, 'basketball-stats', 'src', 'types', 'contracts.ts')
-    const foulTrackerPath = join(ROOT, 'basketball-stats', 'src', 'components', 'TeamFoulTracker.tsx')
-    if (!existsSync(basketContractsPath) || !existsSync(foulTrackerPath)) {
-      throw new Error('Basketball contracts or TeamFoulTracker missing')
+    // basketball-stats #18 (2026-10-08) removed TeamFoulTracker ("no invented stats").
+    // Run the app's real score logic on its recorded Basket.fi (TASO) games instead of
+    // checking arithmetic on made-up numbers.
+    const basketDir = join(ROOT, 'basketball-stats')
+    const statusPath = join(basketDir, 'src', 'utils', 'matchStatus.ts')
+    const fixturePath = join(basketDir, 'tests', 'fixtures', 'basket-get-match.json')
+    if (!existsSync(join(basketDir, 'src', 'types', 'contracts.ts')) || !existsSync(statusPath) || !existsSync(fixturePath)) {
+      throw new Error('Basketball contracts, utils/matchStatus.ts or tests/fixtures/basket-get-match.json missing')
+    }
+    const { classifyMatch, visibleScore, periodScores } = await import(pathToFileURL(statusPath).href)
+    const games = JSON.parse(readFileSync(fixturePath, 'utf-8')).matches
+    const game = (key) => {
+      const g = games[key]?.match ?? games[key]
+      if (!g) throw new Error(`Fixture game '${key}' missing`)
+      return g
+    }
+    const sumOf = (periods, side) => periods.reduce((t, p) => t + (side === 'home' ? p.scoreHome : p.scoreAway), 0)
+    const now = new Date('2026-10-08T12:00:00Z')
+
+    // Honka White 76–38 ToPoLa: four quarters add up to the final score.
+    const played = game('played')
+    const pq = periodScores(played)
+    const ps = visibleScore(played, classifyMatch(played, now))
+    if (pq.length !== 4 || !ps || sumOf(pq, 'home') !== ps.home || sumOf(pq, 'away') !== ps.away || ps.home !== 76 || ps.away !== 38) {
+      throw new Error(`Quarter sum vs final mismatch: ${JSON.stringify({ pq, ps })}`)
+    }
+    // LePy 89–85 Torpan Pojat: overtime is the fifth period and counts.
+    const ot = game('playedOvertime')
+    const oq = periodScores(ot)
+    const os = visibleScore(ot, classifyMatch(ot, now))
+    if (oq.length !== 5 || oq[4].quarter !== 5 || !os || sumOf(oq, 'home') !== os.home || sumOf(oq, 'away') !== os.away) {
+      throw new Error(`Overtime sum mismatch: ${JSON.stringify({ oq, os })}`)
+    }
+    // Played without reported quarters: no 0–0 quarters invented.
+    if (periodScores(game('playedNoQuarters')).length !== 0) {
+      throw new Error('Blank quarters were filled in')
+    }
+    // Upcoming game that TASO sends as 0–0: no score shown.
+    const upcoming = game('upcoming')
+    if (visibleScore(upcoming, classifyMatch(upcoming, now)) !== undefined) {
+      throw new Error('Upcoming 0–0 shown as a score')
+    }
+    // Walkover and a stale "Live" game from last month: no score printed.
+    const forfeit = game('forfeited')
+    const stale = game('staleBreak')
+    if (classifyMatch(forfeit, now) !== 'forfeit' || visibleScore(forfeit, 'forfeit') !== undefined) {
+      throw new Error('Walkover shown as a played score')
+    }
+    if (classifyMatch(stale, now) !== 'unconfirmed' || visibleScore(stale, classifyMatch(stale, now)) !== undefined) {
+      throw new Error('Stale Live game shown as live/final')
     }
 
-    // Mathematical verification of 4-quarter sum
-    const qScoresHome = [18, 14, 20, 16] // Sum: 68
-    const qScoresAway = [15, 17, 12, 18] // Sum: 62
-    const totalHome = qScoresHome.reduce((a, b) => a + b, 0)
-    const totalAway = qScoresAway.reduce((a, b) => a + b, 0)
-
-    if (totalHome !== 68 || totalAway !== 62) {
-      throw new Error(`Basketball score sum mismatch: ${totalHome}:${totalAway}`)
-    }
-
-    // Foul bonus threshold: 5 team fouls in a quarter awards bonus free throws
-    const isBonusAwarded = (teamFouls) => teamFouls >= 5
-    if (!isBonusAwarded(5) || isBonusAwarded(4)) {
-      throw new Error('Basketball team foul bonus threshold must be strictly >= 5')
-    }
-
-    pass(7, 'Basketball 4-Quarter Scoring Math & Foul Bonus Invariants',
-      `Honka vs LePy 4-Quarter breakdown sum verified (${totalHome}:${totalAway}). Bonus free throw threshold verified (>= 5 team fouls).`)
+    pass(7, 'Basketball Score Logic on Recorded Basket.fi Games (basketball-stats matchStatus)',
+      `Honka White ${ps.home}–${ps.away} ToPoLa = sum of 4 quarters; LePy ${os.home}–${os.away} incl. OT; blank quarters stay blank; upcoming 0–0, walkover and stale Live show no score.`)
   } catch (err) {
     fail(7, 'Basketball Stats Verification', err.message)
   }
@@ -412,9 +449,9 @@ async function runSupremeGoldenTest() {
     if (!existsSync(webMcpFile)) throw new Error('webMcpRegistry.ts missing')
 
     const content = readFileSync(webMcpFile, 'utf8')
+    // pelipaiva #40 (2026-10-08) dropped check_parking_risk: parking risk belongs to ParkkiS.
     const expectedTools = [
       'get_matchday_schedule',
-      'check_parking_risk',
       'get_family_profiles',
     ]
 
@@ -428,13 +465,20 @@ async function runSupremeGoldenTest() {
       throw new Error('WebMCP registry missing document.modelContext / navigator.modelContext standard mounting points')
     }
 
-    // Enforce agent-browser / Chrome CDP security hint standards
-    if (!content.includes('readOnlyHint: true') || !content.includes('untrustedContentHint: false')) {
-      throw new Error('WebMCP tools must specify readOnlyHint: true and untrustedContentHint: false annotations')
+    // Every tool is read-only. Both return federation and family-entered text (team names,
+    // venues, WhatsApp notes), so per the WebMCP spec they must flag untrustedContentHint: true
+    // (pelipaiva #40). Claiming false would tell agents that outside text is safe to trust.
+    const readOnlyCount = (content.match(/readOnlyHint:\s*true/g) || []).length
+    const untrustedCount = (content.match(/untrustedContentHint:\s*true/g) || []).length
+    if (readOnlyCount < expectedTools.length || untrustedCount < expectedTools.length) {
+      throw new Error(`WebMCP tools must declare readOnlyHint: true and untrustedContentHint: true (found ${readOnlyCount} / ${untrustedCount} for ${expectedTools.length} tools)`)
+    }
+    if (/untrustedContentHint:\s*false/.test(content)) {
+      throw new Error('A WebMCP tool claims untrustedContentHint: false but returns federation/family text')
     }
 
     pass(9, 'AI Agent WebMCP Tool Discovery & Chrome CDP Security Hint Inspection',
-      `Verified browser WebMCP tools (${expectedTools.join(', ')}) declare readOnlyHint: true & untrustedContentHint: false for agent-browser compatibility.`)
+      `Verified browser WebMCP tools (${expectedTools.join(', ')}) declare readOnlyHint: true & untrustedContentHint: true.`)
   } catch (err) {
     fail(9, 'WebMCP Tool Discovery', err.message)
   }
@@ -502,6 +546,11 @@ async function runSupremeGoldenTest() {
   // FINAL VERDICT: THE GOLDEN SEAL OF APPROVAL
   // ─────────────────────────────────────────────────────────────────────────────
   console.log('═'.repeat(76))
+  if (failedSteps.length > 0) {
+    console.error(`❌ SUPREME GOLDEN END-USER TEST: ${passedSteps}/${totalSteps} steps passed. Failed:\n   ${failedSteps.join('\n   ')}`)
+    console.log('═'.repeat(76) + '\n')
+    process.exit(1)
+  }
   console.log(`✨ SUPREME GOLDEN END-USER TEST: 100% PASSED (${passedSteps}/${totalSteps} Steps)`)
   console.log('📜 The 6-Monastery Congregation satisfies all end-user real-world requirements!')
   console.log('═'.repeat(76) + '\n')
