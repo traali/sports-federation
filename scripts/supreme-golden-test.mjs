@@ -247,20 +247,34 @@ async function runSupremeGoldenTest() {
       throw new Error('pelipaiva computes its own parking risk again (calculateParkingRiskContract). Risk must come from ParkkiS.')
     }
 
-    const link = new URL(buildParkingDeepLink('https://parkkis.pages.dev/', 'otahalli', 60.1841, 24.8315))
-    if (link.origin !== 'https://parkkis.pages.dev') {
-      throw new Error(`ParkkiS deep link points at the wrong host: ${link.href}`)
+    // pelipaiva #43: Parkkis reads the venue from /venue/<name> and centres on ?lat=&lon=.
+    // The old ?venue= param was ignored by Parkkis. No exact coordinates means no link.
+    const venueName = 'Otahalli Espoo' // TASO venue_name of salibandy match 929721
+    const href = buildParkingDeepLink('https://parkkis.pages.dev/', venueName, 60.1841, 24.8315)
+    const expected = 'https://parkkis.pages.dev/venue/Otahalli%20Espoo?lat=60.1841&lon=24.8315'
+    if (href !== expected) {
+      throw new Error(`ParkkiS deep link format changed: got ${href}, expected ${expected}`)
     }
-    if (link.searchParams.get('venue') !== 'otahalli' || link.searchParams.get('lat') !== '60.1841' || link.searchParams.get('lon') !== '24.8315') {
-      throw new Error(`ParkkiS deep link lost venue or coordinates: ${link.href}`)
+    // Non-ASCII and spaces are percent-encoded in the path (TASO venue_name of football match 4208631).
+    const encoded = buildParkingDeepLink('https://parkkis.pages.dev/', 'Matinkylä 2 TN B', 60.1841, 24.8315)
+    if (encoded !== 'https://parkkis.pages.dev/venue/Matinkyl%C3%A4%202%20TN%20B?lat=60.1841&lon=24.8315') {
+      throw new Error(`Venue name not encoded in the path: ${encoded}`)
     }
-    const noCoords = new URL(buildParkingDeepLink('https://parkkis.pages.dev/', 'kamppi'))
-    if (noCoords.searchParams.has('lat') || noCoords.searchParams.has('lon')) {
-      throw new Error(`ParkkiS deep link invented coordinates: ${noCoords.href}`)
+    for (const [label, lat, lon] of [['no coordinates', undefined, undefined], ['lat only', 60.1841, undefined], ['NaN', NaN, NaN], ['Null Island', 0, 0]]) {
+      const none = buildParkingDeepLink('https://parkkis.pages.dev/', 'Kamppi', lat, lon)
+      if (none !== null) {
+        throw new Error(`ParkkiS link must be null with ${label}, got ${none}`)
+      }
+    }
+    // The link must open Parkkis itself, not a 404.
+    const res = await fetch(href, { redirect: 'follow' })
+    const html = await res.text()
+    if (res.status !== 200 || !/<title>[^<]*ParkkiS/i.test(html)) {
+      throw new Error(`ParkkiS deep link did not serve Parkkis: HTTP ${res.status} on ${href}`)
     }
 
     pass(4, 'ParkkiS Deep Link Contract (risk stays in ParkkiS)',
-      `Otahalli: ${link.href}. Without coordinates: ${noCoords.href}. No local parking-risk guess in pelipaiva.`)
+      `${href} → HTTP ${res.status} (ParkkiS). No link without exact coordinates (missing, partial, NaN, 0,0). No local parking-risk guess in pelipaiva.`)
   } catch (err) {
     fail(4, 'ParkkiS Deep Link Contract', err.message)
   }
