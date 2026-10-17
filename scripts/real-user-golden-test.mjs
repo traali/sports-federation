@@ -120,10 +120,70 @@ async function readPelipaivaEvents(page) {
   );
 }
 
-/** Day after the upcoming Saturday (YYYY-MM-DD). */
-function getUpcomingSundayDateISO() {
-  const sat = new Date(`${getUpcomingSaturdayDateISO()}T12:00:00Z`);
-  return new Date(sat.getTime() + 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+// ─────────────────────────────────────────────────────────────────────────────
+// Europe/Helsinki wall-clock helpers (real zone rules via Intl, never a fixed UTC+3)
+// ─────────────────────────────────────────────────────────────────────────────
+const HKI = 'Europe/Helsinki';
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+/** Helsinki UTC offset in minutes at an instant (+180 in summer time, +120 in winter time). */
+export function helsinkiOffsetMinutes(at) {
+  const name = new Intl.DateTimeFormat('en-US', { timeZone: HKI, timeZoneName: 'longOffset' })
+    .formatToParts(at).find((p) => p.type === 'timeZoneName').value; // "GMT+03:00"
+  const m = /GMT([+-])(\d{2}):(\d{2})/.exec(name);
+  return m ? (m[1] === '-' ? -1 : 1) * (Number(m[2]) * 60 + Number(m[3])) : 0;
+}
+
+/** Helsinki wall clock (YYYY-MM-DD, HH:MM) -> ISO UTC instant, using that day's zone rules. */
+export function helsinkiToIso(day, hhmm) {
+  const wall = Date.parse(`${day}T${hhmm}:00.000Z`);
+  let utc = wall - helsinkiOffsetMinutes(new Date(wall)) * 60000;
+  utc = wall - helsinkiOffsetMinutes(new Date(utc)) * 60000; // settle on the offset in force then
+  return new Date(utc).toISOString();
+}
+
+/** Helsinki calendar date (YYYY-MM-DD) of an instant. */
+export function helsinkiDateISO(at = new Date()) {
+  return new Intl.DateTimeFormat('en-CA', { timeZone: HKI, year: 'numeric', month: '2-digit', day: '2-digit' }).format(at);
+}
+
+/** Helsinki weekday of an instant: 1 = Monday … 7 = Sunday. */
+export function helsinkiWeekday(at = new Date()) {
+  const wd = new Intl.DateTimeFormat('en-US', { timeZone: HKI, weekday: 'short' }).format(at);
+  return ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].indexOf(wd) + 1;
+}
+
+/** Helsinki wall-clock minutes since midnight of an instant. */
+function helsinkiMinutesOfDay(at = new Date()) {
+  const [h, m] = new Intl.DateTimeFormat('en-GB', { timeZone: HKI, hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(at).split(':').map(Number);
+  return h * 60 + m;
+}
+
+/** YYYY-MM-DD plus n calendar days. */
+function addDaysISO(day, n) {
+  return new Date(Date.parse(`${day}T12:00:00Z`) + n * DAY_MS).toISOString().slice(0, 10);
+}
+
+const hhmm = (mins) => `${String(Math.floor(mins / 60)).padStart(2, '0')}:${String(mins % 60).padStart(2, '0')}`;
+
+/** Next Sunday strictly after today's Helsinki date (YYYY-MM-DD). */
+function getUpcomingSundayDateISO(now = new Date()) {
+  const wd = helsinkiWeekday(now);
+  return addDaysISO(helsinkiDateISO(now), wd === 7 ? 7 : 7 - wd);
+}
+
+/**
+ * The next Sunday on which Helsinki changes clocks (last Sunday of March or October) whose
+ * previous Sunday is still ahead of us, so both sides of the change can be seeded as upcoming.
+ */
+function nextDstSundayPair(now = new Date()) {
+  const tomorrow = addDaysISO(helsinkiDateISO(now), 1);
+  for (let sunday = getUpcomingSundayDateISO(now); ; sunday = addDaysISO(sunday, 7)) {
+    const before = addDaysISO(sunday, -7);
+    const offBefore = helsinkiOffsetMinutes(new Date(helsinkiToIso(before, '12:00')));
+    const offAfter = helsinkiOffsetMinutes(new Date(helsinkiToIso(sunday, '12:00')));
+    if (offBefore !== offAfter && before >= tomorrow) return { before, after: sunday, offBefore, offAfter };
+  }
 }
 
 // Text that only an invented parking estimate would produce. Pelipäivä has no parking
@@ -573,22 +633,30 @@ export async function runRealUserGoldenTestSuite() {
     try {
       await page.goto('https://pelipaiva.pages.dev', { waitUntil: 'domcontentloaded' });
 
-      // Tuomas (Otahalli, Espoo) and Aino (Töölö, Helsinki) play at the same time on the
-      // upcoming Saturday. Old builds stored invented parking blobs on events; they are seeded
-      // too, and must never be shown.
-      const upcomingSat = getUpcomingSaturdayDateISO();
+      // Tuomas (Otahalli, Espoo) and Aino (Töölö, Helsinki) play at overlapping times. Pelipäivä
+      // warns about clashes in the current Mon–Sun Helsinki sports week only (planner.ts
+      // sportsWeekRange), and never about finished games. So the clash is seeded inside this week:
+      // Mon–Sat on tomorrow at 10:00 / 10:30; on Sunday later today (from the next quarter hour
+      // + 1 h, or at 22:30 at the latest, while both games are still on). Presence windows
+      // (gathering 45 min before, game 75 min) overlap by 90 min. Old builds stored invented
+      // parking blobs on events; they are seeded too, and must never be shown.
+      const clashNow = new Date();
+      const isSunday = helsinkiWeekday(clashNow) === 7;
+      const clashDay = isSunday ? helsinkiDateISO(clashNow) : addDaysISO(helsinkiDateISO(clashNow), 1);
+      const tuomasStart = isSunday ? Math.min(Math.ceil((helsinkiMinutesOfDay(clashNow) + 60) / 15) * 15, 22 * 60 + 30) : 10 * 60;
+      const at = (day, mins) => (mins < 24 * 60 ? helsinkiToIso(day, hhmm(mins)) : helsinkiToIso(addDaysISO(day, 1), hhmm(mins - 24 * 60)));
       const clashProfiles = [
         { id: 'prof-tuomas', playerName: 'Tuomas', teamName: 'Westend Indians P14 Haastaja', sport: 'floorball' },
         { id: 'prof-aino', playerName: 'Aino', teamName: 'HJK T13 Sininen', sport: 'football' },
       ];
-      const clashEvents = [
+      const clashEventsOn = (day, t0) => [
         {
           id: 'match-tuomas-1',
           profileId: 'prof-tuomas',
           title: 'Westend Indians vs Oilers',
-          startTime: `${upcomingSat}T07:00:00.000Z`, // 10:00 Finnish local
-          endTime: `${upcomingSat}T08:15:00.000Z`, // 11:15
-          warmupTime: `${upcomingSat}T06:15:00.000Z`, // 09:15
+          startTime: at(day, t0),
+          endTime: at(day, t0 + 75),
+          warmupTime: at(day, t0 - 45),
           venue: { name: 'Otahalli Espoo', normalizedName: 'otahalli', coordinates: { lat: 60.1841, lng: 24.8315 } },
           parking: { easeScore: 'easy', easeScoreValue: 95, feeZone: 'Maksuton (Pysäköintikiekko 4h)', warnings: [] },
           sport: 'floorball',
@@ -600,9 +668,9 @@ export async function runRealUserGoldenTestSuite() {
           id: 'match-aino-1',
           profileId: 'prof-aino',
           title: 'HJK Sininen vs KäPa',
-          startTime: `${upcomingSat}T07:30:00.000Z`, // 10:30 Finnish local
-          endTime: `${upcomingSat}T08:45:00.000Z`, // 11:45
-          warmupTime: `${upcomingSat}T06:45:00.000Z`, // 09:45
+          startTime: at(day, t0 + 30),
+          endTime: at(day, t0 + 105),
+          warmupTime: at(day, t0 - 15),
           venue: { name: 'Töölön Pallokenttä', normalizedName: 'töölön pallokenttä', coordinates: { lat: 60.1873, lng: 24.9258 } },
           parking: { easeScore: 'tight', easeScoreValue: 25, feeZone: 'Maksullinen Vyöhyke 2 (€2/h)', warnings: ['🔴 Ahdas parkki', 'Valvontariski (8/10)'] },
           sport: 'football',
@@ -611,6 +679,7 @@ export async function runRealUserGoldenTestSuite() {
           isHomeMatch: true,
         },
       ];
+      const clashEvents = clashEventsOn(clashDay, tuomasStart);
       const alert = page.locator('button[aria-label^="Logistiikkaristiriita"]');
       const twoDrivers = /kaksi kuskia|2 kuskia|yksi vanhempi per kenttä/i;
 
@@ -686,15 +755,28 @@ export async function runRealUserGoldenTestSuite() {
         throw new Error('DOM-06 Failure: Compact tab failed to select');
       }
 
+      // Outside the week: the same clash a week later is not this week's problem, so by design
+      // no clash warning is shown yet (the games themselves are still stored).
+      const nextWeekDay = addDaysISO(clashDay, 7);
+      await seedPelipaiva(page, { profiles: clashProfiles, events: clashEventsOn(nextWeekDay, tuomasStart), home: null });
+      await page.reload({ waitUntil: 'networkidle' });
+      await page.waitForTimeout(1500);
+      const storedNextWeek = (await readPelipaivaEvents(page)).filter((e) => !e.isHidden).length;
+      if (storedNextWeek !== 2) throw new Error(`Outside-week phase: expected 2 stored games on ${nextWeekDay}, found ${storedNextWeek}`);
+      const outsideAlerts = await alert.count();
+      if (outsideAlerts !== 0) {
+        throw new Error(`A clash on ${nextWeekDay} (next sports week) shows a clash warning; Pelipäivä warns about the current Mon–Sun week only`);
+      }
+
       await page.evaluate((key) => localStorage.removeItem(key), PELIPAIVA_HOME_KEY);
 
       const duration = performance.now() - t0;
       recordPass(
         'Journey 1',
         'Multi-Sport Family Saturday Clash (Espoo vs Helsinki)',
-        'DOM-01 (clash + two-driver advice, with and without home), no guessed drive minutes, DOM-06',
+        'DOM-01 (in-week clash + two-driver advice, with and without home; no warning for next week), no guessed drive minutes, DOM-06',
         duration,
-        `Clash Otahalli vs Töölö (90 min) with two-driver advice in alert and planner, with and without a home; leave time only with a home. Tab switch: ${Math.round(switchLatency)}ms.`
+        `Clash Otahalli vs Töölö (90 min) on ${clashDay} ${hhmm(tuomasStart)} (this week) with two-driver advice in alert and planner, with and without a home; leave time only with a home; same clash on ${nextWeekDay} (next week) has no warning. Tab switch: ${Math.round(switchLatency)}ms.`
       );
     } catch (err) {
       await page.evaluate((key) => localStorage.removeItem(key), PELIPAIVA_HOME_KEY).catch(() => {});
@@ -722,9 +804,9 @@ export async function runRealUserGoldenTestSuite() {
           id: 'cal-ppj-away-1',
           profileId: 'prof-johanna',
           title: 'EsPa - PPJ (Vierasottelu) - Valkoinen peliasu!',
-          startTime: `${day}T06:30:00.000Z`, // 09:30 Finnish local
-          endTime: `${day}T08:25:00.000Z`,
-          warmupTime: `${day}T06:30:00.000Z`,
+          startTime: helsinkiToIso(day, '09:30'), // Helsinki wall clock on that day (EEST or EET)
+          endTime: helsinkiToIso(day, '11:25'),
+          warmupTime: helsinkiToIso(day, '09:30'),
           venue: { name: 'Matinkylä 2 TN B', normalizedName: 'matinkylä 2 tn b' },
           sport: 'football',
           homeTeam: 'EsPa',
@@ -736,9 +818,9 @@ export async function runRealUserGoldenTestSuite() {
           officialFixtureId: fixtureId,
           profileId: 'prof-johanna',
           title: 'EsPa/Keltainen 3 vs PPJ/Laru sin',
-          startTime: `${day}T07:15:00.000Z`, // 10:15 Finnish local
-          endTime: `${day}T08:25:00.000Z`, // 11:25
-          warmupTime: `${day}T06:30:00.000Z`,
+          startTime: helsinkiToIso(day, '10:15'),
+          endTime: helsinkiToIso(day, '11:25'),
+          warmupTime: helsinkiToIso(day, '09:30'),
           venue: { name: 'Matinkylä 2 TN B', normalizedName: 'matinkylä 2 tn b' },
           sport: 'football',
           homeTeam: 'EsPa/Keltainen 3',
@@ -796,6 +878,28 @@ export async function runRealUserGoldenTestSuite() {
       await page.waitForTimeout(500);
       const upcomingText = await checkReconciledCard('upcoming');
 
+      // Across the clock change: the same 10:15 Helsinki kickoff on the Sundays before and after
+      // the next change is stored at different UTC instants (one hour apart) and both cards say 10.15.
+      // Without zone rules, one side of the change would show 09.15 or 11.15.
+      if (helsinkiToIso('2026-10-04', '10:15') !== '2026-10-04T07:15:00.000Z' || helsinkiToIso('2026-10-25', '10:15') !== '2026-10-25T08:15:00.000Z') {
+        throw new Error(`Helsinki zone helper is wrong: 4.10. 10:15 -> ${helsinkiToIso('2026-10-04', '10:15')}, 25.10. 10:15 -> ${helsinkiToIso('2026-10-25', '10:15')}`);
+      }
+      const dst = nextDstSundayPair();
+      const dstStarts = [];
+      for (const day of [dst.before, dst.after]) {
+        await seedPelipaiva(page, { profiles: johanna, events: reconciliationPair(day) });
+        await page.reload({ waitUntil: 'networkidle' });
+        await page.locator('button[role="tab"]:has-text("Kortit")').click();
+        await page.waitForTimeout(500);
+        await checkReconciledCard(`${day}, Helsinki UTC+${helsinkiOffsetMinutes(new Date(helsinkiToIso(day, '12:00'))) / 60}`);
+        const stored = (await readPelipaivaEvents(page)).find((e) => e.officialFixtureId === fixtureId && !e.isHidden && !e.mergedIntoEventId);
+        dstStarts.push(stored.startTime);
+      }
+      const shiftMin = (Date.parse(dstStarts[1]) - Date.parse(dstStarts[0]) - 7 * DAY_MS) / 60000;
+      if (shiftMin !== dst.offBefore - dst.offAfter) {
+        throw new Error(`DST: 10:15 kickoffs stored ${dstStarts.join(' / ')}; a week apart they should differ by 7 d ${dst.offBefore - dst.offAfter > 0 ? '+' : ''}${dst.offBefore - dst.offAfter} min, got ${shiftMin} min`);
+      }
+
       // DOM-03: away game, so the away kit (calendar said "Valkoinen peliasu").
       const hasAwayKit = ['Vieraspaita', 'varapaita', 'Valkoinen'].some((t) => upcomingText.includes(t));
       if (!hasAwayKit) {
@@ -806,9 +910,9 @@ export async function runRealUserGoldenTestSuite() {
       recordPass(
         'Journey 2',
         'Away Match Calendar Reconciliation & Kit Disambiguation',
-        'DOM-02 (1 stored event, 1 card, past + upcoming), DOM-03 (away kit), stats links, no spurious alerts',
+        'DOM-02 (1 stored event, 1 card, past + upcoming + both sides of DST), DOM-03 (away kit), stats links, no spurious alerts',
         duration,
-        'Real fixture 4208631 merged with the 09:30 MyClub gathering: played game folded under "aiemmat" and shown as 1 card on tap; upcoming copy shows 1 card with away kit.'
+        `Real fixture 4208631 merged with the 09:30 MyClub gathering: played game folded under "aiemmat" and shown as 1 card on tap; upcoming copy shows 1 card with away kit; 10.15 on both sides of the clock change (${dst.before} ${dstStarts[0]}, ${dst.after} ${dstStarts[1]}).`
       );
     } catch (err) {
       recordFail('Journey 2', 'Away Match Reconciliation', 'DOM-02, DOM-03, kit normalizer', performance.now() - t0, err.message);
