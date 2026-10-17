@@ -29,11 +29,11 @@ const services = [
   // salibandy 929721: Indians 4–5 SPV, F-liiga miehet, Otahalli Espoo, 2026-10-03
   { name: "🏑 Floorball Stats", key: "floorball", url: "https://floorball-stats.pages.dev/match/929721", expect: ["Indians", "SPV", /4\s*[–-]\s*5/] },
   // basket 970996: Honka 59–35 LePy, 14-vuotiaat tytöt II div, 2025-09-20
-  { name: "🏀 Basketball Stats", key: "basketball", url: "https://basketball-stats-byu.pages.dev/#/match/970996", expect: ["Honka", "LePy", /59\s*[–-]?\s*35/] },
+  { name: "🏀 Basketball Stats", key: "basketball", url: "https://basketball-stats-byu.pages.dev/match/970996", expect: ["Honka", "LePy", /59\s*[–-]?\s*35/] },
   // palloliitto 4208631: EsPa/Keltainen 3 2–3 PPJ/Laru sin, P13 Kolmonen, 2026-10-04
-  { name: "⚽ Football Stats", key: "football", url: "https://football-stats-agk.pages.dev/#/match/4208631", expect: ["EsPa/Keltainen 3", "PPJ/Laru sin", /2\s*:\s*3/] },
+  { name: "⚽ Football Stats", key: "football", url: "https://football-stats-agk.pages.dev/match/4208631", expect: ["EsPa/Keltainen 3", "PPJ/Laru sin", /2\s*:\s*3/] },
   // lentopallo 803471: Pfeifer Kuusamo 3–1 Puijo Wolley, Naisten Mestaruusliiga, 2026-10-02
-  { name: "🏐 Volleyball Stats", key: "volleyball", url: "https://volleyball-stats-7xq.pages.dev/#/match/803471", expect: ["Pfeifer Kuusamo", "Puijo Wolley", /3\s*[–-]\s*1/] },
+  { name: "🏐 Volleyball Stats", key: "volleyball", url: "https://volleyball-stats-7xq.pages.dev/match/803471", expect: ["Pfeifer Kuusamo", "Puijo Wolley", "Pisteet (180)", /3\s*[–-]\s*1/] },
 ];
 
 async function run() {

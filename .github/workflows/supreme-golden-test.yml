@@ -39,6 +39,11 @@ jobs:
       - name: Execute Supreme Golden End-User Test Suite
         run: npx --yes tsx@4 scripts/supreme-golden-test.mjs
 
+      # The prod suite renders the live match pages (the data arrives from TASO after load).
+      - name: Install headless Chromium
+        if: ${{ !cancelled() }}
+        run: npm i --no-save --no-package-lock playwright@1.64.0 && npx playwright install --with-deps chromium
+
       # Run even when the step above fails, so one red step never hides the other suite.
       - name: Execute Live Production WebMCP Golden Test Suite
         if: ${{ !cancelled() }}

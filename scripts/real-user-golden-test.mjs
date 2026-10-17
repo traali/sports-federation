@@ -358,13 +358,14 @@ export async function runRealUserGoldenTestSuite() {
 
     const freshnessResults = [];
     let staleCount = 0;
+    let downCount = 0;
 
     for (const m of monasteries) {
+      // Compare with the repo's default branch on GitHub (no sibling clone needed).
       let localHead = 'unknown';
       try {
-        localHead = execSync('git rev-parse --short HEAD', {
-          cwd: join(ROOT, m.dir),
-        }).toString().trim();
+        localHead = execSync(`git ls-remote https://github.com/traali/${m.dir}.git HEAD`, { timeout: 20000 })
+          .toString().trim().split(/\s+/)[0].slice(0, 7) || 'unknown';
       } catch (e) {
         localHead = 'err';
       }
@@ -396,14 +397,15 @@ export async function runRealUserGoldenTestSuite() {
         deployedCommit = `Error: ${err.message}`;
       }
 
-      const isParity = localHead === deployedCommit;
+      if (httpStatus !== 200) downCount++;
+      const isParity = localHead !== 'err' && localHead !== 'unknown' && deployedCommit.slice(0, 7) === localHead;
       if (!isParity) staleCount++;
 
       freshnessResults.push({
         Service: m.name,
         HTTP: httpStatus === 200 ? '200 OK' : `HTTP ${httpStatus}`,
         'Deployed Commit': deployedCommit,
-        'Local HEAD': localHead,
+        'GitHub HEAD': localHead,
         Status: isParity ? '✅ PARITY' : '⚠️ STALE',
         'Build Time': buildTime !== 'N/A' ? buildTime.slice(0, 19).replace('T', ' ') : 'N/A',
       });
@@ -412,12 +414,14 @@ export async function runRealUserGoldenTestSuite() {
     console.table(freshnessResults);
 
     if (staleCount > 0) {
-      console.warn(`⚠️ [FRESHNESS ALERT] ${staleCount} monasteries have local git commits ahead of Cloudflare Pages.`);
+      console.warn(`⚠️ [FRESHNESS ALERT] ${staleCount} monasteries do not serve their GitHub default-branch HEAD.`);
       console.warn('   (Production builds are functional ancestors; deployment sync recommended).');
     }
 
     const duration = performance.now() - t0;
-    if (strictFreshness && staleCount > 0) {
+    if (downCount > 0) {
+      recordFail('Gate 1', 'Production Freshness & Commit Parity Gate', `${6 - downCount}/6 answer HTTP 200`, duration, `${downCount} monasteries did not answer HTTP 200`);
+    } else if (strictFreshness && staleCount > 0) {
       recordFail('Gate 1', 'Production Freshness & Commit Parity Gate', `${6 - staleCount}/6 in exact parity`, duration, `${staleCount} monasteries are STALE`);
     } else {
       recordPass('Gate 1', 'Production Freshness & Commit Parity Gate', `All 6 monasteries live HTTP 200 (${6 - staleCount}/6 parity, ${staleCount} alerted)`, duration, `Parity check completed across 6 sovereign repos in ${Math.round(duration)}ms.`);
