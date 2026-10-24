@@ -60,7 +60,8 @@ if (mode === 'tokens') {
     const lower = file.toLowerCase();
     if (lower.includes('test') || lower.includes('fixtures') || lower.includes('git-guard') || lower.includes('verify-token-safety') || lower.includes('deterministicreasoner')) continue;
 
-    const isCode = /\.(ts|tsx|js|jsx|mjs|cjs)$/i.test(file);
+    // JSON `null` is a real value (e.g. federation.neighbors.json "taso": null); judge JSON like code.
+    const isCode = /\.(ts|tsx|js|jsx|mjs|cjs|json)$/i.test(file);
     const isMarkdown = /\.md$/i.test(file);
     const content = readFileSync(file, 'utf8');
     const lines = content.split('\n');
