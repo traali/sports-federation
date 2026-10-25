@@ -103,3 +103,4 @@ Append-only chronicle of cross-repository architectural decisions, contract vers
 taso-proxy now serves all four TASO sports. Origin CF 403 cache is bypassed. Clients retry with `_cb`. Cellarer deploys worker. See docs/TASO_PROXY.md.
 ## 2026-09-12 — Chapter of Neighbors
 Each house visit now checks peer AGENTS.md, canonical contract fields, 5-point plans, live URLs, TASO. See docs/NEIGHBORS.md.
+- 2026-10-25: taso-proxy retired (upstream blocks Cloudflare egress); all apps call TASO directly, signed. Proxy removed from neighbors graph and check-neighbors.
