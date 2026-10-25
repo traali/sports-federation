@@ -1,3 +1,5 @@
+> **Retired 2026-10-25:** upstream blocks Cloudflare egress; apps call TASO directly (signed). Kept for history only.
+
 # Torneopal cache — Cloudflare Worker
 
 Gold worker: `traali/taso-proxy`  

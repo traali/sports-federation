@@ -108,10 +108,13 @@ export const REAL_MATCH_PAGES = [
     sport: 'Volleyball', id: '803471', waitFor: 'Puijo Wolley',
     url: 'https://volleyball-stats-7xq.pages.dev/match/803471',
     check(text) {
-      for (const n of ['Pfeifer Kuusamo – Puijo Wolley', 'Pisteet (180)']) if (!text.includes(n)) throw new Error(`missing "${n}"`)
+      for (const n of ['Pfeifer Kuusamo – Puijo Wolley']) if (!text.includes(n)) throw new Error(`missing "${n}"`)
       if (!/^\s*3–1\s*$/m.test(text)) throw new Error('set score 3–1 not shown')
       const sets = [...text.matchAll(/^(\d)\. erä\s*\n\s*\d+ min\s*\n\s*Pfeifer Kuusamo\s*\n\s*(\d+)\s*\n\s*Puijo Wolley\s*\n\s*(\d+)\s*$/gm)].map((m) => [+m[2], +m[3]])
       if (sets.length !== 4) throw new Error(`expected 4 sets, found ${sets.length}`)
+      // 'Pisteet (N)' heading left with the one-page layout (volleyball-stats #23); assert the 180 points from the set scores instead.
+      const total = sets.flat().reduce((x, y) => x + y, 0)
+      if (total !== 180) throw new Error(`set points add up to ${total}, expected 180`)
       const won = [sets.filter(([h, a]) => h > a).length, sets.filter(([h, a]) => a > h).length]
       const points = sum(sets.flat())
       if (won.join() !== '3,1') throw new Error(`sets won ${won.join('–')}, page says 3–1`)
